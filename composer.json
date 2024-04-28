@@ -1,0 +1,16 @@
+{
+    "name": "woodlands/core",
+    "description": "Core package shared by all projects in the Woodlands GP",
+    "type": "library",
+    "license": "Apache",
+    "minimum-stability": "dev",
+    "prefer-stable": false,
+    "autoload": {
+        "psr-4": {
+            "Woodlands\\Core\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^8.1"
+    }
+}
