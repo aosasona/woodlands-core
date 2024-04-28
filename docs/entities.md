@@ -17,3 +17,4 @@ This document lists all the entities and their appropriate role(s) in the system
 - `module_session`: This represents what periods a module runs, it also contains the expected count of weeks and attendance it is supposed to run for which is used to determine overall attendance.
 - `classroom`: A classroom, as the name implies, represents what room in the school a session runs in.
 - `session_attendance`: Contains records for the status of students' attendance for their assigned module sessions. 
+- `audit_logs`: Used to represent and keep track of actions performed by any user in the system, it has no direct relationship to other entities.
