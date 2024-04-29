@@ -1,0 +1,158 @@
+#!/usr/bin/env php
+
+<?php
+
+require_once __DIR__ . "/vendor/autoload.php";
+
+use Woodlands\Core\Database\{Migration, Connection};
+
+const MIGRATIONS_DIR = __DIR__ . "/data/migrations";
+
+if (php_sapi_name() != "cli") {
+    echo "This script can only be run from the terminal!";
+    exit(1);
+}
+
+function print_help()
+{
+    echo "Usage: php migrate [options]" . PHP_EOL;
+    echo "Options:" . PHP_EOL;
+    echo "  up                Run all pending migrations" . PHP_EOL;
+    echo "  create <title>    Create a pair of new (blank) migration files [flags: -e, --editor]" . PHP_EOL;
+    echo "  -h, --help        Show this help message" . PHP_EOL;
+    exit(0);
+}
+
+function print_info(string $message)
+{
+    printf("\033[33m[INFO] %s\033[0m" . PHP_EOL, $message);
+}
+
+function print_error(string $message)
+{
+    printf("\033[31m[ERROR] %s\033[0m" . PHP_EOL, $message);
+    exit(1);
+}
+
+function highlight(string $text)
+{
+    printf("\033[37m%s\033[0m", $text);
+}
+
+function check_migration_dir()
+{
+    if(!is_dir(MIGRATIONS_DIR)) {
+        print_error("Migration directory does not exist. Please create it first.");
+    }
+}
+
+function run_migrations()
+{
+    check_migration_dir();
+
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+    $dotenv->safeLoad();
+
+    // $dsn = $_ENV["DSN"] ?? "";
+    // $user = $_ENV["DB_USER"] ?? "";
+    // $pass = $_ENV["DB_PASSWORD"] ?? "";
+
+    $migration = Migration::new(Connection::getInstance());
+    $migration->run(debug: true);
+
+    exit(0);
+}
+
+function create_migration(?string $name, array $options)
+{
+    check_migration_dir();
+
+    if (empty($name)) {
+        $name = readline("Please provide a migration name (e.g \"create users table\"):" . PHP_EOL . "=> ");
+        echo PHP_EOL;
+
+        if (empty($name)) {
+            print_error("Please provide a name for the migration");
+        }
+    }
+
+    $name = preg_replace("/[^a-zA-Z0-9_]/", "_", $name);
+
+    $all_migrations = scandir(MIGRATIONS_DIR, SCANDIR_SORT_DESCENDING);
+    $all_migrations = array_filter($all_migrations, fn ($filename) => !str_starts_with($filename, "."));
+    $all_migrations = array_unique(array_map(fn ($filename) => preg_replace("/.(up|down).sql/", "", $filename), $all_migrations));
+
+    //  TODO: clean this up eventually...
+    $last_idx =  count($all_migrations) > 0 ? explode("_", $all_migrations[0] ?? "00000", 2)[0] ?? "00000" : "00000";
+    $last_idx = intval($last_idx);
+    $current_idx =  str_pad((string) ++$last_idx, 5, "0", STR_PAD_LEFT);
+
+    $name = "{$current_idx}_{$name}";
+
+    $up_migration_file = MIGRATIONS_DIR . "/$name.up.sql";
+    $down_migration_file = MIGRATIONS_DIR . "/$name.down.sql";
+
+    if (in_array($name, $all_migrations)) {
+        print_error("Migration `$name` already exists");
+    }
+
+    $statements = array("up" => "", "down" => "");
+    if (isset($options["e"]) || isset($options["editor"])) {
+        echo "Type in your SQL for both directions, it will break automatically when you use the semi-colon.\n\n";
+
+        highlight("$name.up.sql" . PHP_EOL);
+        $statements["up"] = read_until(";");
+
+        highlight(PHP_EOL . "$name.down.sql" . PHP_EOL);
+        $statements["down"] = read_until(";");
+        echo PHP_EOL;
+    }
+
+    file_put_contents($up_migration_file, $statements["up"]);
+    file_put_contents($down_migration_file, $statements["down"]);
+
+    print_info("Created new migration: {$name}");
+
+    exit(0);
+}
+
+function read_until(string $end_is): string
+{
+    $result = "";
+
+    while (true) {
+        $line = readline(">  ");
+        $result .=  $line . PHP_EOL;
+        if (str_ends_with($line, $end_is)) {
+            break;
+        }
+    }
+
+    return $result;
+}
+
+$rest_index = 1;
+$options = getopt("he", ["help", "editor"], $rest_index);
+if (isset($options["h"]) || isset($options["help"]) || (count($options) === 0 && $argc === 1)) {
+    print_help();
+}
+
+$command = $argv[$rest_index];
+switch ($command) {
+    case "up":
+        run_migrations();
+        break;
+    case "create":
+        $name = $argv[$rest_index + 1] ?? null;
+        create_migration($name, $options);
+        break;
+    case "help":
+        print_help();
+        break;
+    case "version":
+        $version = file_get_contents(__DIR__ . "/.version");
+        echo "Blank v{$version}" . PHP_EOL;
+        break;
+    default:
+        print_error("Invalid command: {$command}");
+}

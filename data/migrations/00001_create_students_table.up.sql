@@ -1,0 +1,6 @@
+-- TODO: finish this
+CREATE TABLE IF NOT EXISTS students (
+  id INTEGER PRIMARY KEY AUTO_INCREMENT,
+  first_name VARCHAR(255) NOT NULL,
+  last_name VARCHAR(255) NOT NULL,
+);
