@@ -65,19 +65,13 @@ class Migration
     private function applyMigration(string $name, string $sql): bool
     {
         $this->logInfo("Applying migration: " . $name);
-        $this->pdo->beginTransaction();
         try {
 
             $this->pdo->exec($sql);
             $this->logMigration($name);
 
-            $this->pdo->commit();
             return true;
         } catch (\PDOException $e) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            }
-
             $this->logError("Failed to apply migration: " . $name);
             $this->logError($e->getMessage());
 
@@ -88,18 +82,11 @@ class Migration
     private function revertMigration(string $name, string $sql): void
     {
         $this->logInfo("Reverting migration: " . $name);
-        $this->pdo->beginTransaction();
         try {
 
             $this->pdo->exec($sql);
             $this->pdo->exec("DELETE FROM " . self::MIGRATIONS_TABLE . " WHERE name = '" . $name . "'");
-
-            $this->pdo->commit();
         } catch (\PDOException $e) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            }
-
             $this->logError("Failed to revert migration: " . $name);
             $this->logError($e->getMessage());
         }
