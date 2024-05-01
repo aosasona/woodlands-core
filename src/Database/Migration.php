@@ -65,8 +65,8 @@ class Migration
     private function applyMigration(string $name, string $sql): bool
     {
         $this->logInfo("Applying migration: " . $name);
+        $this->pdo->beginTransaction();
         try {
-            $this->pdo->beginTransaction();
 
             $this->pdo->exec($sql);
             $this->logMigration($name);
@@ -88,8 +88,8 @@ class Migration
     private function revertMigration(string $name, string $sql): void
     {
         $this->logInfo("Reverting migration: " . $name);
+        $this->pdo->beginTransaction();
         try {
-            $this->pdo->beginTransaction();
 
             $this->pdo->exec($sql);
             $this->pdo->exec("DELETE FROM " . self::MIGRATIONS_TABLE . " WHERE name = '" . $name . "'");
