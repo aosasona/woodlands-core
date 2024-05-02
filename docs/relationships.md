@@ -30,3 +30,4 @@ This document breaks down and explains the relationships between the entities in
 - A sessions has *ONE OR MORE* students
 - A student belongs to *MANY* sessions (e.g. one session for module A and two for module B; every week)
 - A session (and a student mapping) has *MANY* attendance records
+- A session *HAS MANY* attendance data records for each week it recurs
