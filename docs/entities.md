@@ -16,7 +16,7 @@ This document lists all the entities and their appropriate role(s) in the system
 - `module_session`: This represents what periods a module runs, it also contains the expected count of weeks and attendance it is supposed to run for which is used to determine overall attendance.
 - `student_class_schedules`: It describes what students are assigned to what module sessions.
 - `classroom`: A classroom, as the name implies, represents what room in the school a session runs in.
-- `session_attendance`: Contains records for the status of students' attendance for their assigned module sessions. 
+- `student_attendance`: Contains records for the status of students' attendance for their assigned module sessions. 
 - `module_sessions_attendance_data`: Contains weekly record for all recurring and non-recurring sessions, this is strictly for linking to and storing attendance-related data
 - `school_break_schedule`: This is used by the system to keep track of all the days the school is out of session (bank holidays, spring breaks etc)
 <!-- - `audit_logs`: Used to represent and keep track of actions performed by any user in the system, it has no direct relationship to other entities. -->
