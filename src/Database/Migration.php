@@ -67,9 +67,13 @@ class Migration
         $this->logInfo("Applying migration: " . $name);
         try {
 
-            $this->pdo->exec($sql);
-            $this->logMigration($name);
+            foreach (self::splitIntoStatements($sql) as $sql) {
+                if (!$this->pdo->exec($sql)) {
+                    throw new \PDOException("Failed to execute SQL statement");
+                }
+            }
 
+            $this->logMigration($name);
             return true;
         } catch (\PDOException $e) {
             $this->logError("Failed to apply migration: " . $name);
@@ -84,12 +88,59 @@ class Migration
         $this->logInfo("Reverting migration: " . $name);
         try {
 
-            $this->pdo->exec($sql);
+            foreach (self::splitIntoStatements($sql) as $sql) {
+                if (!$this->pdo->exec($sql)) {
+                    throw new \PDOException("Failed to execute SQL statement");
+                }
+            }
+
             $this->pdo->exec("DELETE FROM " . self::MIGRATIONS_TABLE . " WHERE name = '" . $name . "'");
         } catch (\PDOException $e) {
             $this->logError("Failed to revert migration: " . $name);
             $this->logError($e->getMessage());
         }
+    }
+
+    /**
+     *  This splits the content of a migration file into multiple statements so that we can have multiple SQL statements in a single file
+     * @return array<int, string>
+     */
+    private static function splitIntoStatements(string $file_content): array
+    {
+        $statements = [];
+        $current_statement = "";
+        $lines = explode("\n", $file_content);
+
+        foreach ($lines as $line) {
+            if(empty(trim($line))) {
+                continue;
+            }
+
+            // if we reach a line that ends with a semicolon, we should consider it as a complete statement and move on to the next one
+            if (preg_match("/;$/", trim($line))) {
+                $current_statement .= $line;
+                $statements[] = $current_statement;
+                $current_statement = "";
+                continue;
+            }
+
+            // if we reach the `-- split` comment, we should split the current statement (i.e mark as complete) and start a new one
+            if (preg_match("/--(\s+)?split/i", $line)) {
+                $statements[] = $current_statement;
+                $current_statement = "";
+                continue;
+            }
+
+            $current_statement .= $line;
+            $current_statement .= "\n";
+        }
+
+        // Add the last statement as long as it is not empty
+        if(!empty($current_statement)) {
+            $statements[] = $current_statement;
+        }
+
+        return $statements;
     }
 
     /**
