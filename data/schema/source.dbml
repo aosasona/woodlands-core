@@ -39,8 +39,8 @@ Table departments {
   name varchar(255) [not null, unique]
   description text
 
-  created_at timestamp [default: `now()`]
-  last_modified_at timestamp [default: `now()`]
+  created_at timestamp [default: `now()`, not null]
+  last_modified_at timestamp [default: `now()`, not null]
 }
 
 
@@ -55,8 +55,8 @@ Table students {
   user_id int [not null, unique]
   department_id int [not null]
 
-  created_at timestamp [default: `now()`]
-  last_modified_at timestamp [default: `now()`]
+  created_at timestamp [default: `now()`, not null]
+  last_modified_at timestamp [default: `now()`, not null]
 }
 
 Ref: students.student_id - users.user_id [delete: cascade]
@@ -76,7 +76,7 @@ Table staff {
   hired_on date [not null]
 
   created_at timestamp [default: `now()`, not null]
-  last_modified_at timestamp [default: `now()`]
+  last_modified_at timestamp [default: `now()`, not null]
 }
 
 Ref: staff.staff_id - users.user_id [delete: cascade]
@@ -138,7 +138,7 @@ Table modules {
   name varchar(255) [not null, unique, note: "The name of the module e.g. Database Design and Development"]
   description text
 
-  created_at timestamp [default: `now()`]
+  created_at timestamp [default: `now()`, not null]
   last_modified_at timestamp [default: `now()`]
 }
 
@@ -147,7 +147,7 @@ Table course_modules {
   course_id int
   module_id int
 
-  created_at timestamp [default: `now()`]
+  created_at timestamp [default: `now()`, not null]
 
   indexes {
     (course_id, module_id) [pk]
@@ -180,8 +180,8 @@ Ref: student_modules.student_id > students.student_id
 
 // Module tutors
 Table module_tutors {
-  module_id int [not null]
   staff_id int [not null]
+  module_id int [not null]
 
   created_at timestamp [default: `now()`, not null]
 
@@ -202,9 +202,10 @@ Table module_assessments {
   module_id int [not null]
   title varchar(255) [not null]
   content text
-  due_date timestamp [not null]
+  hidden bool [default: true]
+  due_date timestamp
   
-  created_at timestamp [default: `now()`]
+  created_at timestamp [default: `now()`, not null]
   last_modified_at timestamp [default: `now()`]
 }
 
@@ -216,7 +217,7 @@ Table classrooms {
   room_code varchar(16) [not null, unique]
   capacity int [not null]
 
-  added_on timestamp [default: `now()`]
+  added_on timestamp [default: `now()`, not null]
   last_modified_at timestamp [default: `now()`]
 }
 
@@ -229,7 +230,7 @@ Table module_sessions {
   from_time varchar(4) [not null]
   to_time varchar(4) [not null]
 
-  created_at timestamp [default: `now()`]
+  created_at timestamp [default: `now()`, not null]
   last_modified_at timestamp [default: `now()`]
 }
 
@@ -263,7 +264,7 @@ Table module_sessions_attendance_data {
 
   code varchar(8) [not null, note: "this is the attendance code that will be used by students to register their attendance"]
 
-  created_at timestamp [default: `now()`]
+  created_at timestamp [default: `now()`, not null]
 
   indexes {
     (session_id, code) [unique]
