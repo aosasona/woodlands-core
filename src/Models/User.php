@@ -13,7 +13,7 @@ use Woodlands\Core\Models\BaseModel;
 class User extends BaseModel
 {
     #[Column(name: "user_id")]
-    protected string $id;
+    protected int $id;
 
     #[Column(name: "email")]
     protected string $email;
@@ -41,11 +41,6 @@ class User extends BaseModel
     public function __construct(protected Connection $conn)
     {
         parent::__construct($conn);
-    }
-
-    public function __set(string $name, mixed $value): void
-    {
-        parent::__set($name, $value);
     }
 
     public function setPassword(string $password): void

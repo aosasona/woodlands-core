@@ -3,6 +3,7 @@
 namespace Woodlands\Core\Models;
 
 use ReflectionClass;
+use Woodlands\Core\Attributes\Column;
 use Woodlands\Core\Attributes\Table;
 use Woodlands\Core\Database\Connection;
 
@@ -13,6 +14,15 @@ abstract class BaseModel
     private string $primaryKey;
     private static array $columnNames = [];
     private array $changedColumns = [];
+
+    public function __get(string $name): mixed
+    {
+        if (!property_exists($this, $name)) {
+            throw new \Exception("Property $name does not exist");
+        }
+
+        return $this->$name;
+    }
 
     public function __set(string $name, mixed $value): void
     {
@@ -92,7 +102,7 @@ abstract class BaseModel
                 continue;
             }
 
-            $column_attributes = $property->getAttributes("Woodlands\Core\Attributes\Column");
+            $column_attributes = $property->getAttributes(Column::class);
 
             if(empty($column_attributes)) {
                 continue;
@@ -117,7 +127,7 @@ abstract class BaseModel
         $columns = array_filter(
             (new ReflectionClass(static::class))->getProperties(),
             function ($property) {
-                $column_attributes = $property->getAttributes("Woodlands\Core\Attributes\Column");
+                $column_attributes = $property->getAttributes(Column::class);
                 return count($column_attributes) > 0;
             }
         );
@@ -156,5 +166,26 @@ abstract class BaseModel
     public function getChangedColumns(): array
     {
         return $this->changedColumns;
+    }
+
+    public function toJSON(): string
+    {
+        $data = [];
+        $columns = array_filter(
+            (new ReflectionClass(static::class))->getProperties(),
+            function ($property) {
+                $column_attributes = $property->getAttributes(Column::class);
+                return count($column_attributes) > 0;
+            }
+        );
+
+        foreach($columns as $column) {
+            $column_name = $column->name;
+            if(property_exists($this, $column_name) && isset($this->$column_name)) {
+                $data[$column_name] = $this->$column_name;
+            }
+        }
+
+        return json_encode($data);
     }
 }
