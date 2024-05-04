@@ -3,6 +3,7 @@ CREATE TABLE `staff` (
   `first_name` varchar(64) NOT NULL,
   `last_name` varchar(64) NOT NULL,
   `date_of_birth` date NOT NULL,
+  `role` varchar(128),
   `gender` enum('M', 'F') NOT NULL,
   `user_id` int UNIQUE NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT (now()),

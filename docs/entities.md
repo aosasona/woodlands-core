@@ -3,6 +3,7 @@
 This document lists all the entities and their appropriate role(s) in the system
 
 - `user`: A general abstraction for someone using any of the systems, this makes it easier to generalise lookups for and during authentication and authorization.
+- `department` Represents a department in the school eg. Art and Science
 - `staff`: This entity represents both teaching and non-teaching staff members.
 - `student`: As the name implies, someone who is not an admin but only attends the school as a student.
 - `student_tutor`: This describes the relationship between a staff and a student, every student *must* have a tutor.

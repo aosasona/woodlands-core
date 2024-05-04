@@ -13,7 +13,6 @@ enum Gender {
   F
 }
 
-// TODO: add other fields to all tables
 Table users {
   user_id int [pk, increment]
   email_address varchar(255) [not null, unique]
@@ -24,6 +23,16 @@ Table users {
   last_modified_at timestamp [default: `now()`]
 }
 
+// Departments
+Table departments {
+  department_id int [pk, increment]
+  name varchar(255)
+
+  created_at timestamp [default: `now()`]
+  last_modified_at timestamp [default: `now()`]
+}
+
+
 // Students
 Table students {
   student_id int [pk, increment]
@@ -31,13 +40,16 @@ Table students {
   last_name varchar(64)
   date_of_birth date [not null]
   gender Gender [not null]
-  user_id int [not null]
+  nationality varchar(64) [not null]
+  user_id int [not null, unique]
+  department_id int [not null]
 
   created_at timestamp [default: `now()`]
   last_modified_at timestamp [default: `now()`]
 }
 
 Ref: students.student_id - users.user_id [delete: cascade]
+Ref: students.department_id - departments.department_id [delete: set null]
 
 
 // Staff
@@ -45,15 +57,18 @@ Table staff {
   staff_id int [pk, increment]
   first_name varchar(64)
   last_name varchar(64)
+  role varchar(255)
   date_of_birth date [not null]
   gender Gender [not null]
-  user_id int [not null]
+  user_id int [not null, unique]
+  department_id int [not null]
 
   created_at timestamp [default: `now()`]
   last_modified_at timestamp [default: `now()`]
 }
 
 Ref: staff.staff_id - users.user_id [delete: cascade]
+Ref: staff.department_id - departments.department_id [delete: set null]
 
 
 // Staff tutors
@@ -76,10 +91,13 @@ Table courses {
   course_id int [pk, increment]
   name varchar(255) [not null, unique, note: "The name of the course e.g. Software Engineering"]
   description text [not null]
+  department_id int [not null]
 
   created_at timestamp [default: `now()`]
   last_modified_at timestamp [default: `now()`]
 }
+
+Ref: courses.department_id - departments.department_id [delete: set null]
 
 // Student courses enrollments
 Table student_courses {
