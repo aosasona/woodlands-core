@@ -9,8 +9,17 @@ enum UserType {
 }
 
 enum Gender {
-  M
-  F
+  male
+  female
+  others
+}
+
+enum WeekDay {
+  mon
+  tue
+  wed
+  thu
+  fri
 }
 
 Table users {
@@ -18,15 +27,17 @@ Table users {
   email_address varchar(255) [not null, unique]
   hashed_password varchar(255) [not null]
   user_type UserType [not null]
+  last_signed_in_at timestamp
 
-  created_at timestamp [default: `now()`]
-  last_modified_at timestamp [default: `now()`]
+  created_at timestamp [not null, default: `now()`]
+  last_modified_at timestamp [not null, default: `now()`]
 }
 
 // Departments
 Table departments {
   department_id int [pk, increment]
-  name varchar(255)
+  name varchar(255) [not null, unique]
+  description text
 
   created_at timestamp [default: `now()`]
   last_modified_at timestamp [default: `now()`]
@@ -36,8 +47,8 @@ Table departments {
 // Students
 Table students {
   student_id int [pk, increment]
-  first_name varchar(64)
-  last_name varchar(64)
+  first_name varchar(64) [not null]
+  last_name varchar(64) [not null]
   date_of_birth date [not null]
   gender Gender [not null]
   nationality varchar(64) [not null]
@@ -55,15 +66,16 @@ Ref: students.department_id - departments.department_id [delete: set null]
 // Staff
 Table staff {
   staff_id int [pk, increment]
-  first_name varchar(64)
-  last_name varchar(64)
+  first_name varchar(64) [not null]
+  last_name varchar(64) [not null]
   role varchar(255)
   date_of_birth date [not null]
   gender Gender [not null]
   user_id int [not null, unique]
   department_id int [not null]
+  hired_on date [not null]
 
-  created_at timestamp [default: `now()`]
+  created_at timestamp [default: `now()`, not null]
   last_modified_at timestamp [default: `now()`]
 }
 
@@ -73,9 +85,10 @@ Ref: staff.department_id - departments.department_id [delete: set null]
 
 // Staff tutors
 Table student_tutors {
-  student_id int
+  student_id int [unique]
   staff_id int
 
+  assigned_on timestamp [default: `now()`, not null]
   last_modified_at timestamp [default: `now()`]
 
   indexes {
@@ -84,16 +97,19 @@ Table student_tutors {
 }
 
 Ref: student_tutors.student_id - students.student_id [delete: cascade]
-Ref: student_tutors.staff_id > staff.staff_id [delete: cascade]
+Ref: student_tutors.staff_id > staff.staff_id [delete: set null]
 
 // Courses
 Table courses {
   course_id int [pk, increment]
   name varchar(255) [not null, unique, note: "The name of the course e.g. Software Engineering"]
-  description text [not null]
+  description text
   department_id int [not null]
 
-  created_at timestamp [default: `now()`]
+  start_date date [not null]
+  end_date date [not null]
+
+  created_at timestamp [default: `now()`, not null]
   last_modified_at timestamp [default: `now()`]
 }
 
@@ -104,7 +120,7 @@ Table student_courses {
   course_id int
   student_id int
 
-  enrolled_at timestamp [default: `now()`]
+  enrolled_at timestamp [default: `now()`, not null]
   
   indexes {
     (course_id, student_id) [pk]
@@ -120,6 +136,7 @@ Ref: student_courses.student_id - students.student_id
 Table modules {
   module_id int [pk, increment]
   name varchar(255) [not null, unique, note: "The name of the module e.g. Database Design and Development"]
+  description text
 
   created_at timestamp [default: `now()`]
   last_modified_at timestamp [default: `now()`]
@@ -148,7 +165,7 @@ Table student_modules {
   module_id int
   student_id int
 
-  created_at timestamp [default: `now()`]
+  created_at timestamp [default: `now()`, not null]
 
   indexes {
     (module_id, student_id) [pk]
@@ -166,7 +183,7 @@ Table module_tutors {
   module_id int [not null]
   staff_id int [not null]
 
-  created_at timestamp [default: `now()`]
+  created_at timestamp [default: `now()`, not null]
 
   indexes {
     (module_id, staff_id) [pk]
@@ -182,14 +199,16 @@ Ref: module_tutors.staff_id > staff.staff_id
 // Module assessments
 Table module_assessments {
   assessment_id int [pk, increment]
-
   module_id int [not null]
+  title varchar(255) [not null]
+  content text
+  due_date timestamp [not null]
   
   created_at timestamp [default: `now()`]
   last_modified_at timestamp [default: `now()`]
 }
 
-Ref: modules.module_id < module_assessments.assessment_id [delete: set null]
+Ref: modules.module_id < module_assessments.module_id [delete: cascade]
 
 // Classrooms
 Table classrooms {
@@ -206,6 +225,9 @@ Table module_sessions {
   session_id int [pk, increment]
   module_id int [not null]
   room_id int [not null]
+  day WeekDay [not null]
+  from_time varchar(4) [not null]
+  to_time varchar(4) [not null]
 
   created_at timestamp [default: `now()`]
   last_modified_at timestamp [default: `now()`]
@@ -218,9 +240,15 @@ Ref: module_sessions.room_id - classrooms.classroom_id [delete: set null]
 // Student session mappings
 Table student_class_schedules {
   Note:  "This is used to represent what sessions a student is on, which is in turn used to build the timetable"
-  mapping_id int [pk, increment]
+
+  schedule_id int [pk, increment]
+
   student_id int [not null]
   session_id int [not null]
+
+  indexes {
+    (student_id, session_id) [unique]
+  }
 }
 
 Ref: student_class_schedules.student_id > students.student_id [delete: cascade]
@@ -233,7 +261,13 @@ Table module_sessions_attendance_data {
   attendance_id int [pk, increment]
   session_id int [not null]
 
+  code varchar(8) [not null, note: "this is the attendance code that will be used by students to register their attendance"]
+
   created_at timestamp [default: `now()`]
+
+  indexes {
+    (session_id, code) [unique]
+  }
 }
 
 Ref: module_sessions_attendance_data.session_id  > module_sessions.session_id [delete: set null]
