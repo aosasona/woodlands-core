@@ -48,7 +48,6 @@ class Connection
      */
     public function getTables(): array
     {
-        $driver = $this->connection->getAttribute(PDO::ATTR_DRIVER_NAME);
         $sql =  "SELECT table_name FROM information_schema.tables WHERE table_schema = 'woodlands'";
         $stmt = $this->connection->query($sql);
         return $stmt->fetchAll();
