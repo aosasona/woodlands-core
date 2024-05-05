@@ -1,1 +1,1 @@
-DROP TABLE staff;
+DROP TABLE IF EXISTS staff;

@@ -1,1 +1,1 @@
-DROP TABLE departments;
+DROP TABLE IF EXISTS `departments`;

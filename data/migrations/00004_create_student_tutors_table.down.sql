@@ -1,1 +1,1 @@
-DROP TABLE student_tutors;
+DROP TABLE IF EXISTS student_tutors;

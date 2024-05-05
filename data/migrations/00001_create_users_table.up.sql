@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS users (
-  `user_id` int PRIMARY KEY AUTO_INCREMENT,
+  `user_id` int PRIMARY KEY AUTO_INCREMENT NOT NULL,
   `email_address` varchar(255) UNIQUE NOT NULL,
   `hashed_password` varchar(255) NOT NULL,
   `user_type` ENUM ('staff', 'student') NOT NULL,
