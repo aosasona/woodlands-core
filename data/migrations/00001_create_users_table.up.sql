@@ -5,5 +5,5 @@ CREATE TABLE IF NOT EXISTS users (
   `user_type` ENUM ('staff', 'student') NOT NULL,
   `last_signed_in_at` timestamp,
   `created_at` timestamp NOT NULL DEFAULT (now()),
-  `last_modified_at` timestamp NOT NULL DEFAULT (now())
+  `last_modified_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP
 );

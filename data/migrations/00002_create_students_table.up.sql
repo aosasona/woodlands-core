@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS `students` (
   `gender` enum('M', 'F') NOT NULL,
   `user_id` int UNIQUE NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT (now()),
-  `last_modified_at` timestamp NOT NULL DEFAULT (now())
+  `last_modified_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP
 );
 -- split
 ALTER TABLE `students` AUTO_INCREMENT = 100000;

@@ -2,7 +2,7 @@ CREATE TABLE student_tutors (
   `student_id` int UNIQUE,
   `staff_id` int,
   `assigned_on` timestamp NOT NULL DEFAULT (now()),
-  `last_modified_at` timestamp DEFAULT (now()),
+  `last_modified_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`student_id`, `staff_id`)
 );
 --split

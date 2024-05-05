@@ -289,11 +289,13 @@ Table student_attendance {
 
   indexes {
     (attendance_id, student_id) [pk]
+    student_id
+    attendance_id
   }
 }
 
 Ref: student_attendance.student_id > students.student_id [delete: cascade]
-Ref: student_attendance.student_id > module_sessions_attendance_data.attendance_id [delete: set null]
+Ref: student_attendance.attendance_id > module_sessions_attendance_data.attendance_id [delete: cascade]
 
 
 // Break schedule
@@ -303,4 +305,5 @@ Table school_break_schedule {
   from date [not null]
   to date [not null]
   created_at timestamp [default: `now()`]
+  last_modified_at timestamp [default: `now()`, not null]
 }

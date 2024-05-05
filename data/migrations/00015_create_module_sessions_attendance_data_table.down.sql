@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS `module_sessions_attendance_data`;
