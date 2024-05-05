@@ -37,7 +37,7 @@ class Migration
         $this->debug = $debug;
     }
 
-    public function run(bool $debug = false): void
+    public function apply(bool $debug = false): void
     {
         $this->setDebug($debug);
 
@@ -61,6 +61,63 @@ class Migration
 
         $this->applyMigrations($migrations);
     }
+    /**
+     * @param string $name - The name of the migration to rollback, this can also be set to "last" or "all"
+     * @param bool $debug
+     * @param bool $dryRun - If set to true, the migration will not be reverted, this is useful for testing, it is enabled by default to prevent accidental data loss
+     * @return ?array
+     */
+    public function rollback(string $name, bool $debug = false, bool $dryRun = true): array
+    {
+        $this->setDebug($debug);
+
+        if (!$this->migrationsTableExists()) {
+            $this->logError("Migrations table does not exist");
+            return null;
+        }
+
+        $completedMigrations = $this->loadCompletedMigrations();
+        if (count($completedMigrations) === 0) {
+            $this->log("No migrations to revert");
+            return null;
+        }
+
+        $migrationsToRevert = match ($name) {
+            "last" => [end($completedMigrations)],
+            "all" => $completedMigrations,
+            default => [$name],
+        };
+
+        if (count($migrationsToRevert) === 0) {
+            $this->logError("No migrations found to revert");
+            return null;
+        }
+
+        // temporarily disable debug mode if dry run is enabled to avoid printing unnecessary logs
+        $this->setDebug($debug && !$dryRun);
+        $allMigrations = $this->getAllMigrations(skipCompleted: false);
+        $this->setDebug($debug);
+        if ($allMigrations === null) {
+            $this->logError("No migrations found");
+            return null;
+        }
+
+        if ($dryRun) {
+            $this->log("Dry run enabled, no changes were made");
+            return $migrationsToRevert;
+        }
+
+        foreach (array_reverse($migrationsToRevert) as $migration) {
+            if (!array_key_exists($migration, $allMigrations)) {
+                $this->logError("Migration not found: " . $migration);
+                continue;
+            }
+
+            $this->revertMigration($migration, $allMigrations[$migration]["down"]);
+        }
+
+        return $migrationsToRevert;
+    }
 
     private function applyMigration(string $name, string $sql): bool
     {
@@ -68,7 +125,7 @@ class Migration
         try {
 
             foreach (self::splitIntoStatements($sql) as $sql) {
-                if (!$this->pdo->exec($sql)) {
+                if ($this->pdo->exec($sql) === false) {
                     throw new \PDOException("Failed to execute SQL statement");
                 }
             }
@@ -76,8 +133,8 @@ class Migration
             $this->logMigration($name);
             return true;
         } catch (\PDOException $e) {
-            $this->logError("Failed to apply migration: " . $name);
-            $this->logError($e->getMessage());
+            $errInfo = $this->pdo->errorInfo();
+            $this->logError("Failed to apply migration: " . $name . "\n> Reason: ".(end($errInfo) ?? $e->getMessage()));
 
             return false;
         }
@@ -89,15 +146,15 @@ class Migration
         try {
 
             foreach (self::splitIntoStatements($sql) as $sql) {
-                if (!$this->pdo->exec($sql)) {
+                if ($this->pdo->exec($sql) === false) {
                     throw new \PDOException("Failed to execute SQL statement");
                 }
             }
 
             $this->pdo->exec("DELETE FROM " . self::MIGRATIONS_TABLE . " WHERE name = '" . $name . "'");
         } catch (\PDOException $e) {
-            $this->logError("Failed to revert migration: " . $name);
-            $this->logError($e->getMessage());
+            $errInfo = $this->pdo->errorInfo();
+            $this->logError("Failed to apply migration: " . $name . "\n> Reason: ".(end($errInfo) ?? $e->getMessage()));
         }
     }
 
@@ -140,7 +197,7 @@ class Migration
             $statements[] = $current_statement;
         }
 
-        return $statements;
+        return array_filter($statements, fn ($statement) => !empty(trim($statement)));
     }
 
     /**
@@ -152,7 +209,6 @@ class Migration
 
         foreach ($migrations as $name => $files) {
             if (!$this->applyMigration($name, $files["up"])) {
-                $this->logError("Failed to apply migration: " . $name);
                 $this->revertMigration($name, $files["down"]);
                 return; // we don't want to continue if a migration fails, it is critical that we stop there and then
             }
@@ -169,6 +225,7 @@ class Migration
     private function migrationsTableExists(): bool
     {
         $tables = $this->connection->getTables();
+        $tables = array_column(column_key: "table_name", array: $tables);
         return in_array(self::MIGRATIONS_TABLE, $tables);
     }
 
@@ -188,7 +245,7 @@ class Migration
      * @var array<string> $files
      * * @param array<int,mixed> $files
      */
-    private function groupMigrationsByName(array $files): ?array
+    private function groupMigrationsByName(array $files, bool $skipCompleted = true): ?array
     {
         $completed = $this->loadCompletedMigrations();
 
@@ -207,7 +264,7 @@ class Migration
                 $name = $name[0] ?? "";
             }
 
-            if (in_array($name, $completed)) {
+            if (in_array($name, $completed) && $skipCompleted) {
                 if (str_ends_with($file, ".up.sql")) {
                     $this->logInfo("Skipping completed migration: " . $name);
                 }
@@ -259,7 +316,7 @@ class Migration
         }
     }
 
-    private function getAllMigrations(): ?array
+    private function getAllMigrations(bool $skipCompleted = true): ?array
     {
         $files = scandir(self::MIGRATIONS_DIR);
 
@@ -269,7 +326,7 @@ class Migration
             return null;
         }
 
-        $migrations = $this->groupMigrationsByName($files);
+        $migrations = $this->groupMigrationsByName($files, $skipCompleted);
         if ($migrations === null) {
             return null;
         }

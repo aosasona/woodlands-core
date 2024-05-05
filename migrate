@@ -50,11 +50,43 @@ function run_migrations()
 {
     check_migration_dir();
 
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-    $dotenv->safeLoad();
+    $migration = Migration::new(Connection::getInstance());
+    $migration->apply(debug: true);
+
+    exit(0);
+}
+
+function revert_migration(?string $name)
+{
+    $name = strtolower(trim($name));
+    if (empty($name)) {
+        print_error("Please provide a migration name to revert or `last` to revert the last migration and `all` to revert all.");
+    }
+
+    check_migration_dir();
 
     $migration = Migration::new(Connection::getInstance());
-    $migration->run(debug: true);
+    $affected = $migration->rollback(name: $name, debug: true, dryRun: true);
+
+    if (empty($affected)) {
+        print_error("Migration `$name` does not exist or something went wrong, pleae check the logs.");
+    }
+
+    $count = count($affected);
+    $list = "";
+    foreach ($affected as $affected_migration_name) {
+        $list .= "  - {$affected_migration_name}\n";
+    }
+
+    echo "Are you sure you want to revert {$count} migration(s)?\n$list";
+    $confirm = readline("Type 'yes' to confirm or anything else to cancel: ");
+
+    if ($confirm !== "yes") {
+        print_info("Operation cancelled by user.");
+        exit(0);
+    }
+
+    $migration->rollback(name: $name, debug: true, dryRun: false);
 
     exit(0);
 }
@@ -72,7 +104,8 @@ function create_migration(?string $name, array $options)
         }
     }
 
-    $name = preg_replace("/[^a-zA-Z0-9_]/", "_", $name);
+    $name = preg_replace("/[^a-zA-Z0-9_]/", " ", strtolower($name));
+    $name = preg_replace("/\s+/", "_", $name);
 
     $all_migrations = scandir(MIGRATIONS_DIR, SCANDIR_SORT_DESCENDING);
     $all_migrations = array_filter($all_migrations, fn ($filename) => !str_starts_with($filename, "."));
@@ -83,7 +116,7 @@ function create_migration(?string $name, array $options)
     $last_idx = intval($last_idx);
     $current_idx =  str_pad((string) ++$last_idx, 5, "0", STR_PAD_LEFT);
 
-    $name = "{$current_idx}_{$name}";
+    $name = trim("{$current_idx}_{$name}");
 
     $up_migration_file = MIGRATIONS_DIR . "/$name.up.sql";
     $down_migration_file = MIGRATIONS_DIR . "/$name.down.sql";
@@ -102,6 +135,27 @@ function create_migration(?string $name, array $options)
         highlight(PHP_EOL . "$name.down.sql" . PHP_EOL);
         $statements["down"] = read_until(";");
         echo PHP_EOL;
+    }
+
+    // If it is a table creation table, try to extract the table name and use it to scaffold the up and down statements
+    if(preg_match("/^(\d+)_create_([a-z_]+)_table$/", $name, $name_parts)) {
+        do {
+            if (count($name_parts) !== 3 || empty($name_parts[2])) {
+                print_info("This may be an invalid migration name, table name could not be extracted.");
+                break;
+            }
+
+            $table_name = $name_parts[2];
+            if (empty(trim($statements["up"]))) {
+                $statements["up"] = "CREATE TABLE `{$table_name}` (\n\n);";
+                print_info("Scaffolded up statement for table creation: {$table_name}");
+            }
+
+            if (empty(trim($statements["down"]))) {
+                $statements["down"] = "DROP TABLE IF EXISTS `{$table_name}`;";
+                print_info("Scaffolded down statement for table deletion: {$table_name}");
+            }
+        } while (false);
     }
 
     file_put_contents($up_migration_file, $statements["up"]);
@@ -127,16 +181,26 @@ function read_until(string $end_is): string
     return $result;
 }
 
+
+////////// MAIN EXECUTION //////////
+
 $rest_index = 1;
 $options = getopt("he", ["help", "editor"], $rest_index);
 if (isset($options["h"]) || isset($options["help"]) || (count($options) === 0 && $argc === 1)) {
     print_help();
 }
 
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->safeLoad();
+
 $command = $argv[$rest_index];
 switch ($command) {
     case "up":
         run_migrations();
+        break;
+    case "down":
+        $name = $argv[$rest_index + 1] ?? null;
+        revert_migration($name);
         break;
     case "create":
         $name = $argv[$rest_index + 1] ?? null;
