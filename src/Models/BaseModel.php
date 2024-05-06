@@ -9,8 +9,8 @@ use ReflectionClass;
 use Woodlands\Core\Attributes\Column;
 use Woodlands\Core\Attributes\Table;
 use Woodlands\Core\Database\Connection;
-use Woodlands\Core\Error\DecodingException;
-use Woodlands\Core\Error\ModelException;
+use Woodlands\Core\Exceptions\DecodingException;
+use Woodlands\Core\Exceptions\ModelException;
 use Woodlands\Core\Models\Statements\Where;
 
 // This class makes heavy use of attributes, while there are performance implications to using attributes, they are deemed acceptable in this case for the speed of development and convenienve they provide amongst all developers in this project.
