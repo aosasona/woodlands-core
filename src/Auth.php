@@ -32,8 +32,8 @@ final class Auth
             throw new AppException("Invalid email provided, must be in the format of an @woodlands.ac.uk email", 400);
         }
 
-        if (empty($password) || strlen($password) < 6) {
-            throw new AppException("Password is required and must be at least 6 characters", 400);
+        if (empty($password)) {
+            throw new AppException("Password is required", 400);
         }
 
         /** @var ?User $user **/
