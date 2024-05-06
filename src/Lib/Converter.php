@@ -16,8 +16,21 @@ final class Converter
         };
     }
 
-    public function toDateTime(string $date): DateTime
+    public static function fromUserType(UserType $type): string
+    {
+        return match($type) {
+            UserType::Staff => "staff",
+            UserType::Student => "student",
+        };
+    }
+
+    public static function toDateTime(string $date): DateTime
     {
         return new DateTime($date);
+    }
+
+    public static function fromDateTime(DateTime $date): string
+    {
+        return $date->format("Y-m-d H:i:s");
     }
 }
