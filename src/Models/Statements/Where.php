@@ -108,7 +108,7 @@ final class Where
     /**
      * @param array<int,mixed> $values
      */
-    public function one(): ?BaseModel
+    public function one(): BaseModel|null
     {
         return $this->model->whereOne($this, $this->values);
     }

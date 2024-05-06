@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Woodlands\Core\Error;
+namespace Woodlands\Core;
 
 use ErrorException;
 use Throwable;
 
-class Handler
+class FaultHandler
 {
     public static function handleError(mixed $errno, mixed $errstr, mixed $errfile, mixed $errline): void
     {

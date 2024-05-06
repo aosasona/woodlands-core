@@ -1,6 +1,6 @@
 <?php
 
-namespace Woodlands\Core\Error;
+namespace Woodlands\Core\Exceptions;
 
 use Exception;
 use Throwable;
