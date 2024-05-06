@@ -38,7 +38,7 @@ final class Auth
 
         /** @var ?User $user **/
 
-        $user = User::new()->where("email", "=", $email)->one();
+        $user = User::new()->where("email_address", "=", $email)->one();
         if(empty($user)) {
             throw new AppException("User not found", 400);
         }
