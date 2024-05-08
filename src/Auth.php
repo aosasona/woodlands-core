@@ -40,11 +40,11 @@ final class Auth
 
         $user = User::new()->where("email_address", "=", $email)->one();
         if(empty($user)) {
-            throw new AppException("User not found", 400);
+            throw new AppException("Invalid credetials provided", 400);
         }
 
         if(!$user->verifyPassword($password)) {
-            throw new AppException("Invalid password", 400);
+            throw new AppException("Invalid credetials provided", 400);
         }
 
         if(!in_array($user->type, $allowed)) {
