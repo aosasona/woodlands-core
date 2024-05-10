@@ -203,7 +203,6 @@ abstract class BaseModel
     public function all(): array
     {
         $columns = self::getColumnsString();
-        echo "SELECT {$columns} FROM `{$this->tableName}`";
         $stmt = $this->conn->getConnection()->prepare("SELECT {$columns} FROM `{$this->tableName}`");
         $stmt->execute();
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
