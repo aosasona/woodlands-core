@@ -1,6 +1,6 @@
 <?php
 
-namespace Woodlands\Core\Models;
+namespace Woodlands\Core\Models\Enums;
 
 enum UserType: string
 {

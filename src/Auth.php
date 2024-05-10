@@ -18,7 +18,7 @@ final class Auth
     private const PASSWORD_REGEX = "/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/";
 
     /**
-     * @param array<int,\Woodlands\Core\Models\UserType> $allowed
+     * @param array<int,\Woodlands\Core\Models\Enums\UserType> $allowed
      */
     public static function login(string $email, string $password, bool $remember, array $allowed): User
     {

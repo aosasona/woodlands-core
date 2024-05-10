@@ -10,6 +10,7 @@ use Woodlands\Core\Attributes\Table;
 use Woodlands\Core\Database\Connection;
 use Woodlands\Core\Lib\Converter;
 use Woodlands\Core\Models\BaseModel;
+use Woodlands\Core\Models\Enums\UserType;
 
 #[Table(name: "users", primaryKey: "user_id")]
 class User extends BaseModel
