@@ -39,8 +39,9 @@ final class Converter
     public static function toGender(string $gender): string
     {
         return match($gender) {
-            "M" => Gender::Male,
-            "F" => Gender::Female,
+            "male" => Gender::Male,
+            "female" => Gender::Female,
+            "others" => Gender::Others,
             default => throw new \Exception("Invalid gender provided, got $gender")
         };
     }
@@ -48,8 +49,9 @@ final class Converter
     public static function fromGender(Gender $gender): string
     {
         return match ($gender) {
-            Gender::Male => "M",
-            Gender::Female => "F",
+            Gender::Male => "male",
+            Gender::Female => "female",
+            Gender::Others => "others",
             default => throw new \Exception("Invalid gender provided, got $gender")
         };
     }

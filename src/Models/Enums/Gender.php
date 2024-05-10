@@ -4,6 +4,7 @@ namespace Woodlands\Core\Models\Enums;
 
 enum Gender: string
 {
-    case Male = "M";
-    case Female = "F";
+    case Male = "male";
+    case Female = "female";
+    case Others = "others";
 };
