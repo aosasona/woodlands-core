@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Woodlands\Core;
 
 use Woodlands\Core\Exceptions\AppException;
+use Woodlands\Core\Models\Enums\UserType;
+use Woodlands\Core\Models\Staff;
+use Woodlands\Core\Models\Student;
 use Woodlands\Core\Models\User;
 
 final class Auth
@@ -68,6 +71,40 @@ final class Auth
     public static function isLoggedIn(): bool
     {
         return isset($_SESSION["user_id"]) || isset($_COOKIE["user_id"]);
+    }
+    /**
+     * @param array<int,\Woodlands\Core\Models\Enums\UserType> $allowed
+     * @param string $login_path
+     */
+    public function requireLogin(array $allowed, string $login_path = "/sign-in"): void
+    {
+        if(!self::isLoggedIn()) {
+            header("Location: $login_path");
+            exit;
+        }
+
+        $user = self::user();
+        if(!in_array($user->type, $allowed)) {
+            throw new AppException("You do not have sufficient permissons to access this area", 403);
+        }
+    }
+
+    public static function getOwner(): Student|Staff
+    {
+        /** @var User $user */
+        $user = self::user();
+        if(!$user) {
+            throw new AppException("No user signed in!", 403);
+        }
+
+        if(empty($user->getID())) {
+            throw new AppException("Invalid user signed in!", 403);
+        }
+
+        return match($user->type) {
+            UserType::Student => Student::new()->findById($user->getID()),
+            UserType::Staff => Staff::new()->findById($user->getID())
+        };
     }
 
     public static function user(): ?User
