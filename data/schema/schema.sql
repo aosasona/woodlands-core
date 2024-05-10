@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: woodlands_db
--- Generation Time: May 05, 2024 at 02:46 AM
+-- Generation Time: May 10, 2024 at 09:42 PM
 -- Server version: 11.3.2-MariaDB-1:11.3.2+maria~ubu2204
 -- PHP Version: 8.2.18
 
@@ -199,7 +199,7 @@ CREATE TABLE `students` (
   `date_of_birth` date NOT NULL,
   `department_id` int(11) DEFAULT NULL,
   `nationality` varchar(64) NOT NULL,
-  `gender` enum('M','F') NOT NULL,
+  `gender` enum('male','female','others') NOT NULL,
   `user_id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `last_modified_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -283,6 +283,14 @@ CREATE TABLE `users` (
   `last_modified_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`user_id`, `email_address`, `hashed_password`, `user_type`, `last_signed_in_at`, `created_at`, `last_modified_at`) VALUES
+(4, 'jdoe@woodlands.ac.uk', '$2y$10$Ckxr3Clugn.2u2st9vbyn..pCUoVqyMA/FJOi11IVw5TQdv3B.i9a', 'student', NULL, '2024-05-06 16:35:57', '2024-05-06 22:15:42'),
+(5, 'admin@woodlands.ac.uk', '$2y$10$5XtFuG5IZ87NnMPcDPbk7eJmx.lqyPKIf6eOgH1bN.jIQf7YfLUaO', 'staff', NULL, '2024-05-06 21:36:09', '2024-05-06 22:15:46');
+
 -- --------------------------------------------------------
 
 --
@@ -317,7 +325,9 @@ INSERT INTO `__migrations` (`id`, `name`, `created_at`) VALUES
 (43, '00014_create_student_class_schedules_table', '2024-05-05 02:43:33'),
 (44, '00015_create_module_sessions_attendance_data_table', '2024-05-05 02:43:33'),
 (45, '00016_create_student_attendance_table', '2024-05-05 02:43:33'),
-(46, '00017_create_school_break_schedule_table', '2024-05-05 02:43:34');
+(46, '00017_create_school_break_schedule_table', '2024-05-05 02:43:34'),
+(47, '00018_create_default_admin_user', '2024-05-06 21:36:09'),
+(48, '00019_modify_students_gender', '2024-05-10 21:42:06');
 
 --
 -- Indexes for dumped tables
@@ -539,13 +549,13 @@ ALTER TABLE `student_class_schedules`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `__migrations`
 --
 ALTER TABLE `__migrations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
 
 --
 -- Constraints for dumped tables
