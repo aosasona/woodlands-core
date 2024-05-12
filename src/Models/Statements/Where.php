@@ -16,6 +16,8 @@ final class Where
     private array $predicates = [];
     private array $orderBy = [];
 
+    private array $pagination = ["page" => null, "perPage" => null];
+
     public function __construct(BaseModel $model, string $column, string $op, mixed  $value)
     {
         $this->model = $model;
@@ -76,6 +78,18 @@ final class Where
         return $this;
     }
 
+    public function paginate(int $page, int $perPage = 50): self
+    {
+        if($page < 1) {
+            $page = 1;
+        }
+
+        $this->pagination["page"] = $page;
+        $this->pagination["perPage"] = $perPage;
+
+        return $this;
+    }
+
     public function getPredicates(): array
     {
         return $this->predicates;
@@ -94,6 +108,14 @@ final class Where
     public function getOrderBy(): string
     {
         return implode(", ", $this->orderBy);
+    }
+
+    /**
+     * @return array{page: int|null, perPage: int|null}
+     */
+    public function getPagination(): array
+    {
+        return $this->pagination;
     }
 
     /**

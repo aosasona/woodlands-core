@@ -7,6 +7,7 @@ namespace Woodlands\Core\Models;
 use PDO;
 use ReflectionClass;
 use Woodlands\Core\Attributes\Column;
+use Woodlands\Core\Attributes\Relationship;
 use Woodlands\Core\Attributes\Table;
 use Woodlands\Core\Database\Connection;
 use Woodlands\Core\Exceptions\DecodingException;
@@ -27,10 +28,23 @@ abstract class BaseModel
     /** @var array<string, string> **/
     private static array $cachedColumnNames = [];
 
+    /** @var array<string, \Woodlands\Core\Attributes\Relationship> **/
+    private static array $cachedRelationships = [];
+
     public function __get(string $name): mixed
     {
         if (!property_exists($this, $name)) {
             throw new \Exception("Property $name does not exist");
+        }
+
+        // Intercept relationships and return the related model
+        // This is done by checking if the property has a Relationship attribute and if it does, we return the related model
+        if(array_key_exists($name, self::getRelationships()) && !isset($this->$name)) {
+            $data = $this->lazyLoadrelationship($name);
+
+            // Cache the relationship
+            $this->$name = $data;
+            return $data;
         }
 
         return $this->$name;
@@ -45,7 +59,7 @@ abstract class BaseModel
         }
 
         // If the column had a previous value and has been instantiated, then it has been changed
-        if (property_exists($this, $name) && !in_array($name, $this->changedColumns)) {
+        if (property_exists($this, $name) && !in_array($name, $this->changedColumns) && isset($this->$name)) {
             $this->changedColumns[] = $name;
         }
 
@@ -90,7 +104,7 @@ abstract class BaseModel
      */
     public function findById(mixed $id): ?self
     {
-        $columns = self::getColumnsString();
+        $columns = $this->getColumnsString();
         $stmt = $this->conn->getConnection()->prepare("SELECT $columns FROM `{$this->tableName}` WHERE `{$this->primaryKey}` = :id LIMIT 1");
         $stmt->execute([":id" => $id]);
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -109,7 +123,7 @@ abstract class BaseModel
             throw new ModelException("Column $column does not exist on model `".static::class."`");
         }
 
-        $columns = self::getColumnsString();
+        $columns = $this->getColumnsString();
         $stmt = $this->conn->getConnection()->prepare("SELECT $columns FROM `{$this->tableName}` WHERE `$column` = :value LIMIT 1");
         $stmt->execute([":value" => $value]);
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -122,7 +136,7 @@ abstract class BaseModel
         return $this;
     }
 
-    public function where(string $col, string $op, string $value): Where
+    public function where(string $col, string $op, mixed $value): Where
     {
         return new Where($this, $col, $op, $value);
     }
@@ -150,7 +164,7 @@ abstract class BaseModel
      */
     private function execGenericWhere(Where $where, array $values, int $count): array
     {
-        $columns = self::getColumnsString();
+        $columns = $this->getColumnsString();
         $db_columns = array_values(self::getColumnNames());
 
         foreach($values as $key => $value) {
@@ -164,9 +178,22 @@ abstract class BaseModel
             throw new ModelException("Column `{$key}` does not exist on table `{$this->tableName}`, did you mean `{$closest}`?");
         }
 
+        $pagination = $where->getPagination();
+        $pagination_clause = "";
+        if ($pagination["page"] !== null && $pagination["perPage"] !== null) {
+            if($count >= 1) {
+                throw new ModelException("Cannot use pagination with count, provided a limit of $count but also attempted to paginate");
+            }
+
+            $offset = ($pagination["page"] - 1) * $pagination["perPage"];
+            $pagination_clause = "LIMIT $offset, {$pagination["perPage"]}";
+        }
+
         $sql = "SELECT $columns FROM `{$this->tableName}` WHERE {$where->getWhereClause()} {$where->getOrderBy()}";
         if ($count >= 1) {
             $sql .= " LIMIT $count";
+        } elseif ($pagination_clause !== "") {
+            $sql .= " $pagination_clause";
         }
 
         $stmt = $this->conn->getConnection()->prepare($sql);
@@ -202,8 +229,9 @@ abstract class BaseModel
      */
     public function all(): array
     {
-        $columns = self::getColumnsString();
-        $stmt = $this->conn->getConnection()->prepare("SELECT {$columns} FROM `{$this->tableName}`");
+        $columns = $this->getColumnsString();
+        $sql = "SELECT {$columns} FROM `{$this->tableName}`";
+        $stmt = $this->conn->getConnection()->prepare($sql);
         $stmt->execute();
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -402,6 +430,64 @@ abstract class BaseModel
         return $closest;
     }
 
+    private function lazyLoadrelationship(string $name): mixed
+    {
+
+        $relationship = self::getRelationships()[$name];
+        // If our foreign key does not exist, then we cannot load the relationship
+        if(!isset($this->{$relationship->property})) {
+            return null;
+        }
+
+        /** @var self $model */
+        $model = new $relationship->model($this->conn);
+        $model = $model->where($relationship->parentColumn, "=", $this->{$relationship->property});
+
+        if($relationship->cardinality === Relationship::SINGLE) {
+            return $model->one();
+        }
+
+        return $model->all();
+    }
+
+    /**
+    * @return array<string, \Woodlands\Core\Attributes\Relationship>
+    * @throws \ReflectionException
+    * @throws \Exception
+    */
+    public static function getRelationships(): array
+    {
+        $properties = array_filter(
+            (new ReflectionClass(static::class))->getProperties(),
+            function ($property) {
+                $relationship_attributes = $property->getAttributes(Relationship::class);
+                return count($relationship_attributes) > 0;
+            }
+        );
+
+        if (count($properties) == count(self::$cachedRelationships)) {
+            return self::$cachedRelationships;
+        }
+
+        $relationships = [];
+
+        foreach($properties as $property) {
+            $relationship_attributes = $property->getAttributes(Relationship::class);
+            if(empty($relationship_attributes)) {
+                continue;
+            }
+
+            if(count($relationship_attributes) > 1) {
+                throw new \Exception("Model class can only have one #[Relationship] attribute per property");
+            }
+
+            $relationship = $relationship_attributes[0]->newInstance();
+            $relationships[$property->getName()] = $relationship;
+        }
+
+        return $relationships;
+    }
+
 
     /**
     * @return array<string, \Woodlands\Core\Attributes\Column>
@@ -463,10 +549,10 @@ abstract class BaseModel
         return $columnNames;
     }
 
-    private static function getColumnsString(): string
+    private function getColumnsString(): string
     {
-        $cols = implode("`, `", self::getColumnNames());
-        return "`$cols`";
+        $cols = implode("`, ".$this->tableName.".`", self::getColumnNames());
+        return "{$this->tableName}.`$cols`";
     }
 
 
@@ -516,14 +602,14 @@ abstract class BaseModel
         return json_encode($data);
     }
 
-    public function __debugInfo(): array
-    {
-        return json_decode($this->toJSON(), true);
-    }
-
     public function __toString(): string
     {
         return $this->toJSON();
+    }
+
+    public function __debugInfo(): array
+    {
+        return json_decode($this->toJSON(), true);
     }
 
     public function __serialize(): array

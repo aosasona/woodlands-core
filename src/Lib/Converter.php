@@ -36,7 +36,7 @@ final class Converter
         return $date->format("Y-m-d H:i:s");
     }
 
-    public static function toGender(string $gender): string
+    public static function toGender(string $gender): Gender
     {
         return match($gender) {
             "male" => Gender::Male,
