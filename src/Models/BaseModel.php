@@ -216,7 +216,7 @@ abstract class BaseModel
             return $value;
         }
 
-        if(!empty($column->encoder)) {
+        if(empty($column->encoder)) {
             throw new DecodingException("Column $column->name must be a scalar value or provide an encoder");
         }
 
@@ -240,7 +240,7 @@ abstract class BaseModel
             }
 
             if ($column->nullable === false && (!isset($this->$propertyName) || empty($this->$propertyName))) {
-                throw new ModelException("Model property `{$propertyName}` ({$column->name}) cannot be null");
+                throw new ModelException("Model property `{$propertyName}` ({$column->name}) on model `".$this->tableName."` cannot be null");
             }
 
             if (!isset($this->$propertyName)) {

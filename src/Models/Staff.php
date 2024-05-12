@@ -56,13 +56,15 @@ class Staff extends BaseModel
 
     #[Column(
         name: "created_at",
+        nullable: true,
         encoder: [Converter::class, "fromDateTime"],
         decoder: [Converter::class, "toDateTime"]
     )]
-    protected DateTime $createdAt;
+    protected ?DateTime $createdAt;
 
     #[Column(
         name: "last_modified_at",
+        nullable: true,
         encoder: [Converter::class, "fromDateTime"],
         decoder: [Converter::class, "toDateTime"]
     )]
@@ -84,5 +86,12 @@ class Staff extends BaseModel
         $now = new DateTime();
         $diff = $now->diff($this->dob);
         return $diff->y;
+    }
+
+    public function generateEmail(bool $withUniqueSuffix = false): string
+    {
+        // A SUFFIX is only needed if we already have an email in the database with similar email address, so we attach 3 random characters to the end of the email
+        $suffix = $withUniqueSuffix ? substr(uniqid(), 0, 3) : "";
+        return strtolower("{$this->firstName[0]}.{$this->lastName}{$suffix}@woodlands.ac.uk");
     }
 }
