@@ -15,6 +15,7 @@ final class Where
     private array $values = [];
     private array $predicates = [];
     private array $orderBy = [];
+    private array $relationships = [];
 
     private array $pagination = ["page" => null, "perPage" => null];
 
@@ -78,6 +79,18 @@ final class Where
         return $this;
     }
 
+    public function with(string $relationship): self
+    {
+        $this->relationships[] = $relationship;
+        return $this;
+    }
+
+    public function withRelations(string ...$relationships): self
+    {
+        $this->relationships = array_merge($this->relationships, $relationships);
+        return $this;
+    }
+
     public function paginate(int $page, int $perPage = 50): self
     {
         if($page < 1) {
@@ -108,6 +121,11 @@ final class Where
     public function getOrderBy(): string
     {
         return implode(", ", $this->orderBy);
+    }
+
+    public function getRelations(): array
+    {
+        return array_unique($this->relationships);
     }
 
     /**

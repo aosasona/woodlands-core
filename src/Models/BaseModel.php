@@ -164,6 +164,7 @@ abstract class BaseModel
      */
     private function execGenericWhere(Where $where, array $values, int $count): array
     {
+        $joins = "";
         $columns = $this->getColumnsString();
         $db_columns = array_values(self::getColumnNames());
 
@@ -178,6 +179,30 @@ abstract class BaseModel
             throw new ModelException("Column `{$key}` does not exist on table `{$this->tableName}`, did you mean `{$closest}`?");
         }
 
+        $relations = $where->getRelations();
+        // Add the relationship columns to the columns to fetch
+        // TODO: optimise this, this is a bit of an inefficient way to do this
+        foreach($relations as $relation) {
+            $relationship = self::getRelationships()[$relation] ?? null;
+            if($relationship == null) {
+                throw new ModelException("Relationship $relation does not exist on model `".static::class."`");
+            }
+
+            /** @var BaseModel $model */
+            $relation_model = new $relationship->model($this->conn);
+            $relation_columns = [$relationship->model, "getColumns"]();
+            $relation_columns = array_values(array_map(fn ($col) => $col->name, $relation_columns));
+            $relation_columns = array_map(fn ($column) => "`{$relation_model->tableName}`.`$column` AS `{$relation_model->tableName}_irn_$column`", $relation_columns);
+            $columns .= ", ".implode(", ", $relation_columns);
+
+            $foreignKeyColumn = $this->getColumnNames()[$relationship->property] ?? null;
+            if ($foreignKeyColumn == null) {
+                throw new ModelException("Column {$relationship->property} does not exist on model `".static::class."`");
+            }
+
+            $joins .= " LEFT JOIN `{$relation_model->tableName}` ON `{$this->tableName}`.`{$foreignKeyColumn}` = `{$relation_model->tableName}`.`{$relationship->parentColumn}`";
+        }
+
         $pagination = $where->getPagination();
         $pagination_clause = "";
         if ($pagination["page"] !== null && $pagination["perPage"] !== null) {
@@ -189,7 +214,8 @@ abstract class BaseModel
             $pagination_clause = "LIMIT $offset, {$pagination["perPage"]}";
         }
 
-        $sql = "SELECT $columns FROM `{$this->tableName}` WHERE {$where->getWhereClause()} {$where->getOrderBy()}";
+        $sql = "SELECT $columns FROM `{$this->tableName}`{$joins} WHERE {$where->getWhereClause()} {$where->getOrderBy()}";
+
         if ($count >= 1) {
             $sql .= " LIMIT $count";
         } elseif ($pagination_clause !== "") {
@@ -368,7 +394,7 @@ abstract class BaseModel
     /**
      * @param array<string,mixed> $data
      */
-    protected function mapColumnsToProperties(array $data): void
+    public function mapColumnsToProperties(array $data): void
     {
         $data = $data ?: [];
         $columns = self::getColumns();
@@ -402,6 +428,32 @@ abstract class BaseModel
             } else {
                 $this->$propertyName = $value;
             }
+        }
+
+        // Handle relationships if present
+        foreach(self::getRelationships() as $relationProperty => $relationship) {
+            // Extract data related to the relationship alone
+            // columns are prefixed with the name of the relationship and `irn` to signify that this is a relationship column
+            $relationship_data = array_filter($data, function ($key) use ($relationProperty) {
+                return str_starts_with($key, "{$relationProperty}_irn_"); // we use `irn` to signify that this is a relationship column
+            }, ARRAY_FILTER_USE_KEY);
+
+            // If we have no data for the relationship, then we can skip this
+            if (empty($relationship_data)) {
+                continue;
+            }
+
+            // Strip the prefix from the column names
+            foreach($relationship_data as $key => $value) {
+                $relationship_data[str_replace("{$relationProperty}_irn_", "", $key)] = $value;
+                unset($relationship_data[$key]);
+            }
+
+            /** @var self $model */
+            $model = new $relationship->model($this->conn);
+            $model->mapColumnsToProperties($relationship_data);
+
+            $this->{$relationProperty} = $model;
         }
     }
 
