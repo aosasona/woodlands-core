@@ -45,7 +45,7 @@ abstract class BaseModel
         }
 
         // If the column had a previous value and has been instantiated, then it has been changed
-        if (property_exists($this, $name) && isset($this->$name) && !in_array($name, $this->changedColumns)) {
+        if (property_exists($this, $name) && !in_array($name, $this->changedColumns)) {
             $this->changedColumns[] = $name;
         }
 
@@ -266,7 +266,6 @@ abstract class BaseModel
 
     private function update(): self
     {
-
         if(empty($this->changedColumns)) {
             return $this;
         }

@@ -7,7 +7,6 @@ namespace Woodlands\Core\Models;
 use DateTime;
 use Woodlands\Core\Attributes\Column;
 use Woodlands\Core\Attributes\Table;
-use Woodlands\Core\Database\Connection;
 use Woodlands\Core\Lib\Converter;
 use Woodlands\Core\Models\BaseModel;
 use Woodlands\Core\Models\Enums\UserType;
@@ -56,11 +55,6 @@ class User extends BaseModel
     protected ?DateTime $modifiedAt;
 
 
-    public function __construct(protected Connection $conn)
-    {
-        parent::__construct($conn);
-    }
-
     public function setPassword(string $password): void
     {
         $this->password = password_hash($password, PASSWORD_DEFAULT);
@@ -69,10 +63,5 @@ class User extends BaseModel
     public function verifyPassword(string $password): bool
     {
         return password_verify($password, $this->password);
-    }
-
-    protected function mapColumnsToProperties($data): void
-    {
-        parent::mapColumnsToProperties($data);
     }
 }

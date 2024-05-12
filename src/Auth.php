@@ -43,20 +43,25 @@ final class Auth
 
         $user = User::new()->where("email_address", "=", $email)->one();
         if(empty($user)) {
-            throw new AppException("Invalid credetials provided", 400);
+            throw new AppException("Invalid credentials provided", 400);
         }
 
         if(!$user->verifyPassword($password)) {
-            throw new AppException("Invalid credetials provided", 400);
+            throw new AppException("Invalid credentials provided", 400);
         }
 
         if(!in_array($user->type, $allowed)) {
             throw new AppException("You do not have sufficient permissons to access this area", 403);
         }
 
+        // Update the last signed in time
+        $user->lastSignedInAt = new \DateTime("now");
+        $user->save();
+
+
         $_SESSION["user_id"] = $user->id;
         if($remember) {
-            setcookie("user_id", $user->id, time() + 3600 * 24 * 30, "/"); // remember for 30 days
+            setcookie("user_id", (string)$user->id, time() + 3600 * 24 * 30, "/"); // remember for 30 days
         }
 
         return $user;
