@@ -10,6 +10,7 @@ use Woodlands\Core\Attributes\Table;
 use Woodlands\Core\Lib\Converter;
 use Woodlands\Core\Models\BaseModel;
 
+/** @psalm-suppress PropertyNotSetInConstructor */
 #[Table(name: "departments", primaryKey: "department_id")]
 class Department extends BaseModel
 {

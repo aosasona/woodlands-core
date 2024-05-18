@@ -59,8 +59,12 @@ abstract class BaseModel implements JsonSerializable
             throw new \Exception("Property `$name` does not exist on model `".static::class."`");
         }
 
-        // If the column had a previous value and has been instantiated, then it has been changed
-        if (property_exists($this, $name) && !in_array($name, $this->changedColumns) && isset($this->$name)) {
+        // If we have not set the column before, then it is a "new" value
+        // If the value is the same as the previous value, then it is not changed
+        // To distinuish between a new modek and a changed model, we need to check if it has a primary key
+        $isUpdate = $this->getID() !== null;
+        $valueHasChanged = (($this->$name ?? null) !== $value);
+        if (property_exists($this, $name) && !in_array($name, $this->changedColumns) && $isUpdate && $valueHasChanged) {
             $this->changedColumns[] = $name;
         }
 
@@ -70,8 +74,8 @@ abstract class BaseModel implements JsonSerializable
     public function __construct(protected Connection $conn)
     {
         $attributes = $this->loadMeta();
-        $this->tableName = $attributes?->name ?? "";
-        $this->primaryKey = $attributes?->primaryKey ?? "";
+        $this->tableName = $attributes->name;
+        $this->primaryKey = $attributes->primaryKey;
 
         if($this->tableName === "" || $this->primaryKey === "") {
             throw new \Exception("Model class must have a #[Model] attribute with tableName and primaryKey properties");
@@ -80,6 +84,7 @@ abstract class BaseModel implements JsonSerializable
 
     public static function new(?Connection $conn = null): self
     {
+        /** @psalm-suppress UnsafeInstantiation */
         return new static($conn ?? Connection::getInstance());
     }
 
@@ -193,7 +198,7 @@ abstract class BaseModel implements JsonSerializable
             $relation_model = new $relationship->model($this->conn);
             $relation_columns = [$relationship->model, "getColumns"]();
             $relation_columns = array_values(array_map(fn ($col) => $col->name, $relation_columns));
-            $relation_columns = array_map(fn ($column) => "`{$relation_model->tableName}`.`$column` AS `{$relation_model->tableName}_irn_$column`", $relation_columns);
+            $relation_columns = array_map(fn ($column) => "`{$relation_model->tableName}`.`$column` AS `{$relation}_irn_$column`", $relation_columns);
             $columns .= ", ".implode(", ", $relation_columns);
 
             $foreignKeyColumn = $this->getColumnNames()[$relationship->property] ?? null;
@@ -242,6 +247,7 @@ abstract class BaseModel implements JsonSerializable
         $models = [];
 
         foreach($data as $row) {
+            /** @psalm-suppress UnsafeInstantiation */
             $model = new static($this->conn);
             $model->mapColumnsToProperties($row);
             $models[] = $model;
@@ -271,7 +277,7 @@ abstract class BaseModel implements JsonSerializable
             return $value;
         }
 
-        if(empty($column->encoder)) {
+        if($column->encoder == null) {
             throw new DecodingException("Column $column->name must be a scalar value or provide an encoder");
         }
 
@@ -350,8 +356,12 @@ abstract class BaseModel implements JsonSerializable
     /**
      * This function creates a new record in the database if the primary key is not set, otherwise it updates the record.
      */
-    public function save(): self
+    public function save(?array $forceUpdate = null): self
     {
+        if ($forceUpdate !== null) {
+            $this->changedColumns = $forceUpdate;
+        }
+
         // We need to determine if we are inserting or updating, and if we can't, bail early
         if($this->getID() == null && !empty($this->changedColumns)) {
             throw new ModelException("Cannot update a record that has not been saved");
@@ -433,7 +443,7 @@ abstract class BaseModel implements JsonSerializable
 
         // Handle relationships if present
         foreach(self::getRelationships() as $relationProperty => $relationship) {
-            $prefix = (new $relationship->model($this->conn))->tableName . "_irn_";
+            $prefix = "{$relationProperty}_irn_";
 
             // Extract data related to the relationship alone
             // columns are prefixed with the name of the relationship and `irn` to signify that this is a relationship column
@@ -685,6 +695,11 @@ abstract class BaseModel implements JsonSerializable
     public function __unserialize(array $data): void
     {
         $this->mapColumnsToProperties($data);
+    }
+
+    public function __isset(string $name): bool
+    {
+        return !empty($this->$name);
     }
 
     public function jsonSerialize(): array

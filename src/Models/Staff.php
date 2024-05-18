@@ -13,6 +13,7 @@ use Woodlands\Core\Lib\Converter;
 use Woodlands\Core\Models\BaseModel;
 use Woodlands\Core\Models\Enums\Gender;
 
+/** @psalm-suppress PropertyNotSetInConstructor */
 #[Table(name: "staff", primaryKey: "staff_id")]
 class Staff extends BaseModel
 {
