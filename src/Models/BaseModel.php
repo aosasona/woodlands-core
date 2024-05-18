@@ -148,7 +148,7 @@ abstract class BaseModel implements JsonSerializable
     }
 
     /**
-     * @param array<int,mixed> $values
+     * @param array<string, array{value: mixed, skip_verify: bool}> $values
      */
     public function whereOne(Where $where, array $values): ?self
     {
@@ -157,7 +157,7 @@ abstract class BaseModel implements JsonSerializable
 
     /**
      * @return BaseModel[]
-     * @param array<int,mixed> $values
+     * @param array<string, array{value: mixed, skip_verify: bool}> $values
      */
     public function whereAll(Where $where, array $values): array
     {
@@ -166,7 +166,7 @@ abstract class BaseModel implements JsonSerializable
 
     /**
      * @return Woodlands\Core\Models\BaseModel[]
-     * @param array<int,mixed> $values
+     * @param array<string, array{value: mixed, skip_verify: bool}> $values
      */
     private function execGenericWhere(Where $where, array $values, int $count): array
     {
@@ -174,7 +174,12 @@ abstract class BaseModel implements JsonSerializable
         $columns = $this->getColumnsString();
         $db_columns = array_values(self::getColumnNames());
 
-        foreach($values as $key => $value) {
+        foreach($values as $key => $opt) {
+            // If it is a literal like "`foo`.`bar`", then we skip it
+            if ($opt["skip_verify"]) {
+                continue;
+            }
+
             // replace keys like "foo_bar_1" with "foo_bar"
             $key = preg_replace('/_[0-9]+$/', '', $key);
             if (in_array($key, $db_columns)) {
@@ -227,6 +232,8 @@ abstract class BaseModel implements JsonSerializable
         } elseif ($pagination_clause !== "") {
             $sql .= " $pagination_clause";
         }
+
+        $values = array_map(fn ($value) => $value["value"], $values);
 
         $stmt = $this->conn->getConnection()->prepare($sql);
         $stmt->execute($values);

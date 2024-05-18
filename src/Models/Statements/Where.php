@@ -12,7 +12,9 @@ final class Where
 
     private BaseModel $model;
 
+    /** @var array<string, array{value: mixed, skip_verify: bool}> */
     private array $values = [];
+
     private array $predicates = [];
     private array $orderBy = [];
     private array $relationships = [];
@@ -29,6 +31,13 @@ final class Where
     private function add(string $condition, string $column, string $op, mixed $value): void
     {
         $placeholder = $column;
+        $skip_verify = false;
+
+        if(preg_match("/\./", $placeholder)) {
+            $placeholder = str_replace("`", "", $placeholder);
+            $placeholder = str_replace(".", "_", $placeholder);
+            $skip_verify = true;
+        }
 
         // If we have a value with the same name, we need to make sure we don't overwrite it , so we append a number to the placeholder
         if (array_key_exists($placeholder, $this->values)) {
@@ -36,7 +45,7 @@ final class Where
         }
 
         $this->predicates[] = "{$condition} {$column} {$op} :{$placeholder}";
-        $this->values[$placeholder] = $value;
+        $this->values[$placeholder] = ["value" => $value, "skip_verify" => $skip_verify];
     }
 
     public function and(string $column, string $op, mixed $value): self
@@ -62,14 +71,12 @@ final class Where
      */
     public function in(string $column, array $values): self
     {
-        $placeholders = [];
-        foreach ($values as $value) {
-            $placeholder = $column ."_". count($this->values);
-            $placeholders[] = ":$placeholder";
-            $this->values[$placeholder] = $value;
-        }
+        $value = implode(", ", $values);
+        $placeholder = preg_replace("/[^a-zA-Z0-9]/", "_", $column);
+        $placeholder = preg_replace("/_+/", "_", $placeholder)."_".count($this->values);
+        $this->predicates[] = "$column IN (:{$placeholder})";
+        $this->values[$placeholder] = ["value" => $value, "skip_verify" => true];
 
-        $this->predicates[] = "$column IN (" . implode(", ", $placeholders) . ")";
         return $this;
     }
 
@@ -113,11 +120,6 @@ final class Where
         return implode(" ", $this->predicates);
     }
 
-    public function getConditions(): string
-    {
-        return implode(" ", $this->conditions);
-    }
-
     public function getOrderBy(): string
     {
         return implode(", ", $this->orderBy);
@@ -137,7 +139,6 @@ final class Where
     }
 
     /**
-     * @param array<int,mixed> $values
      * @return BaseModel[]
      */
     public function all(): array
@@ -145,9 +146,6 @@ final class Where
         return $this->model->whereAll($this, $this->values);
     }
 
-    /**
-     * @param array<int,mixed> $values
-     */
     public function one(): BaseModel|null
     {
         return $this->model->whereOne($this, $this->values);
