@@ -16,6 +16,8 @@ use Woodlands\Core\Models\Enums\Gender;
 #[Table(name: "staff", primaryKey: "staff_id")]
 class Staff extends BaseModel
 {
+    public const ROLE_HOD = "Head of Department";
+
     #[Column(name: "staff_id")]
     protected int $id;
 

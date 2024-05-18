@@ -13,9 +13,10 @@ use Woodlands\Core\Database\Connection;
 use Woodlands\Core\Exceptions\DecodingException;
 use Woodlands\Core\Exceptions\ModelException;
 use Woodlands\Core\Models\Statements\Where;
+use JsonSerializable;
 
 // This class makes heavy use of attributes, while there are performance implications to using attributes, they are deemed acceptable in this case for the speed of development and convenienve they provide amongst all developers in this project.
-abstract class BaseModel
+abstract class BaseModel implements JsonSerializable
 {
     private string $tableName;
     private string $primaryKey;
@@ -432,10 +433,12 @@ abstract class BaseModel
 
         // Handle relationships if present
         foreach(self::getRelationships() as $relationProperty => $relationship) {
+            $prefix = (new $relationship->model($this->conn))->tableName . "_irn_";
+
             // Extract data related to the relationship alone
             // columns are prefixed with the name of the relationship and `irn` to signify that this is a relationship column
-            $relationship_data = array_filter($data, function ($key) use ($relationProperty) {
-                return str_starts_with($key, "{$relationProperty}_irn_"); // we use `irn` to signify that this is a relationship column
+            $relationship_data = array_filter($data, function ($key) use ($prefix) {
+                return str_starts_with($key, $prefix); // we use `irn` to signify that this is a relationship column
             }, ARRAY_FILTER_USE_KEY);
 
             // If we have no data for the relationship, then we can skip this
@@ -445,7 +448,7 @@ abstract class BaseModel
 
             // Strip the prefix from the column names
             foreach($relationship_data as $key => $value) {
-                $relationship_data[str_replace("{$relationProperty}_irn_", "", $key)] = $value;
+                $relationship_data[str_replace($prefix, "", $key)] = $value;
                 unset($relationship_data[$key]);
             }
 
@@ -484,7 +487,6 @@ abstract class BaseModel
 
     private function lazyLoadrelationship(string $name): mixed
     {
-
         $relationship = self::getRelationships()[$name];
         // If our foreign key does not exist, then we cannot load the relationship
         if(!isset($this->{$relationship->property})) {
@@ -651,6 +653,14 @@ abstract class BaseModel
             }
         }
 
+        foreach(self::getRelationships() as $propertyName => $relation) {
+            if(!isset($this->$propertyName)) {
+                continue;
+            }
+
+            $data[$propertyName] = $this->$propertyName ?? null;
+        }
+
         return json_encode($data);
     }
 
@@ -676,4 +686,10 @@ abstract class BaseModel
     {
         $this->mapColumnsToProperties($data);
     }
+
+    public function jsonSerialize(): array
+    {
+        return json_decode($this->toJSON(), true);
+    }
+
 }
