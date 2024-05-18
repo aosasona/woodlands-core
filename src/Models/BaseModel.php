@@ -416,7 +416,7 @@ abstract class BaseModel implements JsonSerializable
             // Else, if we have a default and we have specified this column to be nullable even though the base type is not, then we should set the value to the default
             if($value == null && !$column->baseTypeIsNullable) {
                 if (!$column->nullable || $column->default == null) {
-                    throw new DecodingException("Column $column->name cannot be null");
+                    throw new DecodingException("Column $column->name cannot be null on model `".static::class."`");
                 }
 
                 $value = $column->default;
@@ -434,7 +434,6 @@ abstract class BaseModel implements JsonSerializable
                 if (!is_callable($converter)) {
                     throw new DecodingException("Converter for column $column->name is not callable");
                 }
-
                 $this->$propertyName = $converter($value);
             } else {
                 $this->$propertyName = $value;
@@ -452,6 +451,7 @@ abstract class BaseModel implements JsonSerializable
             }, ARRAY_FILTER_USE_KEY);
 
             // If we have no data for the relationship, then we can skip this
+            // $relationship_data = array_filter($relationship_data);
             if (empty($relationship_data)) {
                 continue;
             }
@@ -464,8 +464,14 @@ abstract class BaseModel implements JsonSerializable
 
             /** @var self $model */
             $model = new $relationship->model($this->conn);
-            $model->mapColumnsToProperties($relationship_data);
 
+            // If the model's primary key is null here, skip this relationship data, as it means we have no data to work with for this relationship
+            if(empty($relationship_data[$model->primaryKey])) {
+                $this->{$relationProperty} = null;
+                continue;
+            }
+
+            $model->mapColumnsToProperties($relationship_data);
             $this->{$relationProperty} = $model;
         }
     }

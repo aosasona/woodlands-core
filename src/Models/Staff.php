@@ -48,7 +48,7 @@ class Staff extends BaseModel
     #[Column(name: "user_id")]
     protected int $userId;
 
-    #[Column(name: "department_id", nullable: true)]
+    #[Column(name: "department_id", nullable: true, baseTypeIsNullable: true)]
     protected ?int $departmentId = null;
 
     #[Column(
