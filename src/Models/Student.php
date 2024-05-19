@@ -96,4 +96,17 @@ class Student extends BaseModel
         $diff = $now->diff($this->dob);
         return $diff->y;
     }
+
+    public function generateEmail(): string
+    {
+        $year = $this->dob->format("Y");
+        $day = $this->dob->format("d");
+        $prefix = substr($year, 2, 2) . $day;
+        return "{$this->firstName}.{$this->lastName}{$prefix}@woodlands.ac.uk";
+    }
+
+    public function generateDefaultPassword(): string
+    {
+        return "{$this->firstName}{$this->lastName}{$this->dob->format("Y")}";
+    }
 }

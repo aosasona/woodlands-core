@@ -62,4 +62,18 @@ class Connection
         $stmt->execute($params);
         return $stmt ?: null;
     }
+    /**
+     * @param array<int,mixed> $params
+     */
+    public function execute(string $sql, array $params = []): int
+    {
+        $stmt = $this->connection->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->rowCount();
+    }
+
+    public function lastInsertId(): string
+    {
+        return $this->connection->lastInsertId();
+    }
 }

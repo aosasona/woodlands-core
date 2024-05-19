@@ -23,13 +23,13 @@ abstract class BaseModel implements JsonSerializable
 
     private array $changedColumns = [];
 
-    /** @var array<string, \Woodlands\Core\Attributes\Column> **/
+    /** @var array<string, array<string, \Woodlands\Core\Attributes\Column>> **/
     private static array $cachedColumns = [];
 
-    /** @var array<string, string> **/
+    /** @var array<string, array<string, string>> **/
     private static array $cachedColumnNames = [];
 
-    /** @var array<string, \Woodlands\Core\Attributes\Relationship> **/
+    /** @var array<string, <array<string, \Woodlands\Core\Attributes\Relationship>> **/
     private static array $cachedRelationships = [];
 
     public function __get(string $name): mixed
@@ -40,7 +40,7 @@ abstract class BaseModel implements JsonSerializable
 
         // Intercept relationships and return the related model
         // This is done by checking if the property has a Relationship attribute and if it does, we return the related model
-        if (array_key_exists($name, self::getRelationships()) && !isset($this->$name)) {
+        if (array_key_exists($name, static::getRelationships()) && !isset($this->$name)) {
             $data = $this->lazyLoadrelationship($name);
 
             // Cache the relationship
@@ -82,7 +82,7 @@ abstract class BaseModel implements JsonSerializable
         }
     }
 
-    public static function new(?Connection $conn = null): self
+    public static function new(?Connection $conn = null): static
     {
         /** @psalm-suppress UnsafeInstantiation */
         return new static($conn ?? Connection::getInstance());
@@ -93,14 +93,14 @@ abstract class BaseModel implements JsonSerializable
      */
     public function getID(): mixed
     {
-        $columns = self::getColumnNames();
+        $columns = static::getColumnNames();
         $primaryKeyProperty = array_search($this->primaryKey, $columns);
         return $this->{$primaryKeyProperty} ?? null;
     }
 
     private function setID(mixed $id): void
     {
-        $columns = self::getColumnNames();
+        $columns = static::getColumnNames();
         $primaryKeyProperty = array_search($this->primaryKey, $columns);
         $this->{$primaryKeyProperty} = (int)$id;
     }
@@ -125,7 +125,7 @@ abstract class BaseModel implements JsonSerializable
 
     public function findByColumn(string $column, mixed $value): ?static
     {
-        if (!in_array($column, self::getColumnNames())) {
+        if (!in_array($column, static::getColumnNames())) {
             throw new ModelException("Column $column does not exist on model `" . static::class . "`");
         }
 
@@ -177,7 +177,7 @@ abstract class BaseModel implements JsonSerializable
     {
         $joins = "";
         $columns = $this->getColumnsString();
-        $db_columns = array_values(self::getColumnNames());
+        $db_columns = array_values(static::getColumnNames());
 
         foreach ($values as $key => $opt) {
             // If it is a literal like "`foo`.`bar`", then we skip it
@@ -199,7 +199,7 @@ abstract class BaseModel implements JsonSerializable
         // Add the relationship columns to the columns to fetch
         // TODO: optimise this, this is a bit of an inefficient way to do this
         foreach ($relations as $relation) {
-            $relationship = self::getRelationships()[$relation] ?? null;
+            $relationship = static::getRelationships()[$relation] ?? null;
             if ($relationship == null) {
                 throw new ModelException("Relationship $relation does not exist on model `" . static::class . "`");
             }
@@ -306,7 +306,7 @@ abstract class BaseModel implements JsonSerializable
         $columnsToInsert = [];
 
         // Make sure that all non-nullable columns are set
-        foreach (self::getColumns() as $propertyName => $column) {
+        foreach (static::getColumns() as $propertyName => $column) {
             if ($column->name === $this->primaryKey) {
                 continue;
             }
@@ -346,7 +346,7 @@ abstract class BaseModel implements JsonSerializable
 
         // Make sure the updated columns retain their integrity
         foreach ($this->changedColumns as $propertyName) {
-            $column = self::getColumns()[$propertyName];
+            $column = static::getColumns()[$propertyName];
             $value = $this->$propertyName;
 
             // Ensure it is a scalar value
@@ -419,7 +419,7 @@ abstract class BaseModel implements JsonSerializable
     public function mapColumnsToProperties(array $data): void
     {
         $data = $data ?: [];
-        $columns = self::getColumns();
+        $columns = static::getColumns();
         foreach ($columns as $propertyName => $column) {
             $value = $data[$column->name] ?? null;
 
@@ -452,7 +452,7 @@ abstract class BaseModel implements JsonSerializable
         }
 
         // Handle relationships if present
-        foreach (self::getRelationships() as $relationProperty => $relationship) {
+        foreach (static::getRelationships() as $relationProperty => $relationship) {
             $prefix = "{$relationProperty}_irn_";
 
             // Extract data related to the relationship alone
@@ -514,13 +514,13 @@ abstract class BaseModel implements JsonSerializable
 
     private function lazyLoadrelationship(string $name): mixed
     {
-        $relationship = self::getRelationships()[$name];
+        $relationship = static::getRelationships()[$name];
         // If our foreign key does not exist, then we cannot load the relationship
         if (!isset($this->{$relationship->property})) {
             return null;
         }
 
-        /** @var self $model */
+        /** @var static $model */
         $model = new $relationship->model($this->conn);
         $model = $model->where($relationship->parentColumn, "=", $this->{$relationship->property});
 
@@ -546,8 +546,8 @@ abstract class BaseModel implements JsonSerializable
             }
         );
 
-        if (count($properties) == count(self::$cachedRelationships)) {
-            return self::$cachedRelationships;
+        if (!empty(self::$cachedRelationships[static::class]) && count($properties) == count(self::$cachedRelationships[static::class] ?? [])) {
+            return self::$cachedRelationships[static::class];
         }
 
         $relationships = [];
@@ -585,8 +585,8 @@ abstract class BaseModel implements JsonSerializable
             }
         );
 
-        if (count($properties) == count(self::$cachedColumns)) {
-            return self::$cachedColumns;
+        if (!empty(self::$cachedColumns[static::class]) && count($properties) == count(self::$cachedColumns[static::class] ?? [])) {
+            return self::$cachedColumns[static::class];
         }
 
         $columns = [];
@@ -620,19 +620,19 @@ abstract class BaseModel implements JsonSerializable
      */
     private static function getColumnNames(): array
     {
-        $columns = self::getColumns();
-        if (count($columns) == count(self::$cachedColumnNames)) {
-            return self::$cachedColumnNames;
+        $columns = static::getColumns();
+        if (!empty(self::$cachedColumnNames[static::class]) && count($columns) == count(self::$cachedColumnNames[static::class] ?? [])) {
+            return self::$cachedColumnNames[static::class];
         }
 
         $columnNames = array_map(fn ($column) => $column->name, $columns);
-        self::$cachedColumnNames = $columnNames;
+        self::$cachedColumnNames[static::class] = $columnNames;
         return $columnNames;
     }
 
     private function getColumnsString(): string
     {
-        $cols = implode("`, " . $this->tableName . ".`", self::getColumnNames());
+        $cols = implode("`, " . $this->tableName . ".`", static::getColumnNames());
         return "{$this->tableName}.`$cols`";
     }
 
@@ -666,7 +666,7 @@ abstract class BaseModel implements JsonSerializable
     public function toJSON(bool $includeNullFields = false): string
     {
         $data = [];
-        $columns = self::getColumns();
+        $columns = static::getColumns();
 
         foreach ($columns as $propertyName => $column) {
             if ($column->hideFromOutput || (!isset($this->$propertyName) && !$includeNullFields)) {
@@ -680,7 +680,7 @@ abstract class BaseModel implements JsonSerializable
             }
         }
 
-        foreach (self::getRelationships() as $propertyName => $relation) {
+        foreach (static::getRelationships() as $propertyName => $relation) {
             if (!isset($this->$propertyName)) {
                 continue;
             }
