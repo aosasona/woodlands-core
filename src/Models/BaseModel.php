@@ -147,6 +147,11 @@ abstract class BaseModel implements JsonSerializable
         return new Where($this, $col, $op, $value);
     }
 
+    public function literalWhere(string $where): Where
+    {
+        return new Where($this, literalWhere: $where);
+    }
+
     /**
      * @param array<string, array{value: mixed, skip_verify: bool}> $values
      */
@@ -165,7 +170,6 @@ abstract class BaseModel implements JsonSerializable
     }
 
     /**
-     * @return Woodlands\Core\Models\BaseModel[]
      * @param array<string, array{value: mixed, skip_verify: bool}> $values
      */
     private function execGenericWhere(Where $where, array $values, int $count): array

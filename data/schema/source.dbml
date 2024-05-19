@@ -136,6 +136,7 @@ Ref: student_courses.student_id - students.student_id
 Table modules {
   module_id int [pk, increment]
   name varchar(255) [not null, unique, note: "The name of the module e.g. Database Design and Development"]
+  code varchar(16) [not null, unique, note: "The module code e.g. CS101"]
   description text
 
   created_at timestamp [default: `now()`, not null]

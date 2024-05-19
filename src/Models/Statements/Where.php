@@ -21,9 +21,14 @@ final class Where
 
     private array $pagination = ["page" => null, "perPage" => null];
 
-    public function __construct(BaseModel $model, string $column, string $op, mixed  $value)
+    public function __construct(BaseModel $model, string $column = "", string $op = "", mixed  $value = "", ?string $literalWhere = null)
     {
         $this->model = $model;
+
+        if ($literalWhere !== null) {
+            $this->predicates[] = $literalWhere;
+            return;
+        }
 
         $this->add("", $column, $op, $value);
     }

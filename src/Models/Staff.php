@@ -101,7 +101,7 @@ class Staff extends BaseModel
     public function generateEmail(bool $withUniqueSuffix = false): string
     {
         // A SUFFIX is only needed if we already have an email in the database with similar email address, so we attach 3 random characters to the end of the email
-        $suffix = $withUniqueSuffix ? substr(uniqid(), 0, 3) : "";
+        $suffix = $withUniqueSuffix ? substr(str_shuffle("0123456789"), 0, 3) : "";
         return strtolower("{$this->firstName[0]}.{$this->lastName}{$suffix}@woodlands.ac.uk");
     }
 }

@@ -1,0 +1,1 @@
+ALTER TABLE `modules` ADD COLUMN `code` VARCHAR(16) NOT NULL DEFAULT '' AFTER `name`;

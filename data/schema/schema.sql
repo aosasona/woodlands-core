@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: woodlands_db
--- Generation Time: May 10, 2024 at 09:42 PM
+-- Generation Time: May 19, 2024 at 09:04 AM
 -- Server version: 11.3.2-MariaDB-1:11.3.2+maria~ubu2204
 -- PHP Version: 8.2.18
 
@@ -78,6 +78,13 @@ CREATE TABLE `departments` (
   `last_modified_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `departments`
+--
+
+INSERT INTO `departments` (`department_id`, `name`, `description`, `created_at`, `last_modified_at`) VALUES
+(15, 'computing', 'the computing module', '2024-05-18 20:26:02', '2024-05-18 20:26:02');
+
 -- --------------------------------------------------------
 
 --
@@ -87,6 +94,7 @@ CREATE TABLE `departments` (
 CREATE TABLE `modules` (
   `module_id` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
+  `code` varchar(16) NOT NULL,
   `description` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `last_modified_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -185,6 +193,16 @@ CREATE TABLE `staff` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `last_modified_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `staff`
+--
+
+INSERT INTO `staff` (`staff_id`, `first_name`, `last_name`, `role`, `date_of_birth`, `gender`, `user_id`, `department_id`, `hired_on`, `created_at`, `last_modified_at`) VALUES
+(100000, 'john', 'diggle', '', '1991-12-31', 'male', 9, NULL, '2023-08-20', '2024-05-12 14:26:07', '2024-05-18 22:02:49'),
+(100001, 'ayodeji', 'osasona', 'Head of Department', '2004-06-05', 'male', 8, 15, '2023-07-21', '2024-05-12 03:06:30', '2024-05-19 00:46:37'),
+(100002, 'paul', 'shane', '', '1998-07-21', 'male', 10, 15, '2024-05-10', '2024-05-19 00:45:54', '2024-05-19 00:45:54'),
+(100003, 'doug', 'garson', '', '1998-10-17', 'male', 11, NULL, '2024-05-10', '2024-05-19 00:55:18', '2024-05-19 00:55:18');
 
 -- --------------------------------------------------------
 
@@ -289,7 +307,11 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`user_id`, `email_address`, `hashed_password`, `user_type`, `last_signed_in_at`, `created_at`, `last_modified_at`) VALUES
 (4, 'jdoe@woodlands.ac.uk', '$2y$10$Ckxr3Clugn.2u2st9vbyn..pCUoVqyMA/FJOi11IVw5TQdv3B.i9a', 'student', NULL, '2024-05-06 16:35:57', '2024-05-06 22:15:42'),
-(5, 'admin@woodlands.ac.uk', '$2y$10$5XtFuG5IZ87NnMPcDPbk7eJmx.lqyPKIf6eOgH1bN.jIQf7YfLUaO', 'staff', NULL, '2024-05-06 21:36:09', '2024-05-06 22:15:46');
+(5, 'admin@woodlands.ac.uk', '$2y$10$5XtFuG5IZ87NnMPcDPbk7eJmx.lqyPKIf6eOgH1bN.jIQf7YfLUaO', 'staff', '2024-05-12 03:19:09', '2024-05-06 21:36:09', '2024-05-12 03:19:09'),
+(8, 'a.osasona664@woodlands.ac.uk', '$2y$10$kfSLQUE8j/SXjSEjZN7BtOA865.km4lzOH6QgX2zT5HEbgjMlD8jC', 'staff', NULL, '2024-05-12 03:06:30', '2024-05-12 03:06:30'),
+(9, 'j.diggle664@woodlands.ac.uk', '$2y$10$Yz1ydNs3Y.vG3ga3sUpWWOPLjM8VePJ2twKvzAAR2RPADN4KhP/Ai', 'staff', NULL, '2024-05-12 14:26:07', '2024-05-12 14:26:07'),
+(10, 'p.shane664@woodlands.ac.uk', '$2y$10$TOS5iQx2vRESop.VGhJNuOWjFB3Msfd9Z5WTkhF5slR1mK2RxF9fW', 'staff', NULL, '2024-05-19 00:45:54', '2024-05-19 00:45:54'),
+(11, 'd.garson664@woodlands.ac.uk', '$2y$10$MnmnWINjmv8n/fPusQzQ/ezc5tgDgIMNjAKZbZBd9SEF53dSCq/bq', 'staff', NULL, '2024-05-19 00:55:18', '2024-05-19 00:55:18');
 
 -- --------------------------------------------------------
 
@@ -327,7 +349,10 @@ INSERT INTO `__migrations` (`id`, `name`, `created_at`) VALUES
 (45, '00016_create_student_attendance_table', '2024-05-05 02:43:33'),
 (46, '00017_create_school_break_schedule_table', '2024-05-05 02:43:34'),
 (47, '00018_create_default_admin_user', '2024-05-06 21:36:09'),
-(48, '00019_modify_students_gender', '2024-05-10 21:42:06');
+(48, '00019_modify_students_gender', '2024-05-10 21:42:06'),
+(49, '00020_alter_staff_id_starting_point', '2024-05-12 13:29:55'),
+(50, '00021_add_module_code', '2024-05-19 09:03:02'),
+(51, '00022_restrict_module_code_column', '2024-05-19 09:03:02');
 
 --
 -- Indexes for dumped tables
@@ -368,7 +393,8 @@ ALTER TABLE `departments`
 --
 ALTER TABLE `modules`
   ADD PRIMARY KEY (`module_id`),
-  ADD UNIQUE KEY `name` (`name`);
+  ADD UNIQUE KEY `name` (`name`),
+  ADD UNIQUE KEY `uk_module_code` (`code`);
 
 --
 -- Indexes for table `module_assessments`
@@ -495,7 +521,7 @@ ALTER TABLE `courses`
 -- AUTO_INCREMENT for table `departments`
 --
 ALTER TABLE `departments`
-  MODIFY `department_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `department_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `modules`
@@ -531,7 +557,7 @@ ALTER TABLE `school_break_schedule`
 -- AUTO_INCREMENT for table `staff`
 --
 ALTER TABLE `staff`
-  MODIFY `staff_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `staff_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=100004;
 
 --
 -- AUTO_INCREMENT for table `students`
@@ -549,13 +575,13 @@ ALTER TABLE `student_class_schedules`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `__migrations`
 --
 ALTER TABLE `__migrations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
 
 --
 -- Constraints for dumped tables

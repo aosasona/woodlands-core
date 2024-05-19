@@ -19,6 +19,9 @@ class Module extends BaseModel
     #[Column(name: "name")]
     protected string $name;
 
+    #[Column(name: "code")]
+    protected string $code;
+
     #[Column(name: "description", nullable: true)]
     protected ?string $description = null;
 
