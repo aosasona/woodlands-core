@@ -6,6 +6,7 @@ namespace Woodlands\Core\Models;
 
 use DateTime;
 use Woodlands\Core\Attributes\Column;
+use Woodlands\Core\Attributes\Relationship;
 use Woodlands\Core\Attributes\Table;
 use Woodlands\Core\Database\Connection;
 use Woodlands\Core\Lib\Converter;
@@ -65,6 +66,12 @@ class Student extends BaseModel
         decoder: [Converter::class, "toDateTime"]
     )]
     protected ?DateTime $modifiedAt;
+
+    #[Relationship(model: Department::class, property: "departmentId", parentColumn: "department_id")]
+    protected ?Department $department;
+
+    #[Relationship(model: User::class, property: "userId", parentColumn: "user_id")]
+    protected User $user;
 
 
     public function __construct(protected Connection $conn)

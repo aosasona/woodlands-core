@@ -10,6 +10,10 @@ final class Where
     public const OR = "OR";
     public const LIKE = "LIKE";
 
+    /** 
+     * @template T of BaseModel
+     * @var T 
+     */
     private BaseModel $model;
 
     /** @var array<string, array{value: mixed, skip_verify: bool}> */
@@ -38,7 +42,7 @@ final class Where
         $placeholder = $column;
         $skip_verify = false;
 
-        if(preg_match("/\./", $placeholder)) {
+        if (preg_match("/\./", $placeholder)) {
             $placeholder = str_replace("`", "", $placeholder);
             $placeholder = str_replace(".", "_", $placeholder);
             $skip_verify = true;
@@ -46,7 +50,7 @@ final class Where
 
         // If we have a value with the same name, we need to make sure we don't overwrite it , so we append a number to the placeholder
         if (array_key_exists($placeholder, $this->values)) {
-            $placeholder .= "_".count($this->values);
+            $placeholder .= "_" . count($this->values);
         }
 
         $this->predicates[] = "{$condition} {$column} {$op} :{$placeholder}";
@@ -78,7 +82,7 @@ final class Where
     {
         $value = implode(", ", $values);
         $placeholder = preg_replace("/[^a-zA-Z0-9]/", "_", $column);
-        $placeholder = preg_replace("/_+/", "_", $placeholder)."_".count($this->values);
+        $placeholder = preg_replace("/_+/", "_", $placeholder) . "_" . count($this->values);
         $this->predicates[] = "$column IN (:{$placeholder})";
         $this->values[$placeholder] = ["value" => $value, "skip_verify" => true];
 
@@ -105,7 +109,7 @@ final class Where
 
     public function paginate(int $page, int $perPage = 50): self
     {
-        if($page < 1) {
+        if ($page < 1) {
             $page = 1;
         }
 
@@ -144,15 +148,22 @@ final class Where
     }
 
     /**
-     * @return BaseModel[]
+     * @template T of BaseModel
+     * @return T[]
      */
     public function all(): array
     {
+        /** @var T[] */
         return $this->model->whereAll($this, $this->values);
     }
 
-    public function one(): BaseModel|null
+    /**
+     * @template T of BaseModel
+     * @return T
+     */
+    public function one(): mixed
     {
+        /** @var T */
         return $this->model->whereOne($this, $this->values);
     }
 }

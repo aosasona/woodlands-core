@@ -26,31 +26,31 @@ final class Auth
     public static function login(string $email, string $password, bool $remember, array $allowed): User
     {
         // Validate the email and password
-        if(empty($email) || empty($password)) {
+        if (empty($email) || empty($password)) {
             throw new AppException("Both email and password are required", 400);
         }
 
         $email = filter_var($email, FILTER_VALIDATE_EMAIL);
-        if($email === false || !(str_ends_with($email, "@woodlands.ac.uk"))) {
+        if ($email === false || !(str_ends_with($email, "@woodlands.ac.uk"))) {
             throw new AppException("Invalid email provided, must be in the format of an @woodlands.ac.uk email", 400);
         }
 
-        if (empty($password)) {
+        if (empty(trim($password))) {
             throw new AppException("Password is required", 400);
         }
 
         /** @var ?User $user **/
 
         $user = User::new()->where("email_address", "=", $email)->one();
-        if(empty($user)) {
+        if (empty($user)) {
             throw new AppException("Invalid credentials provided", 400);
         }
 
-        if(!$user->verifyPassword($password)) {
+        if (!$user->verifyPassword($password)) {
             throw new AppException("Invalid credentials provided", 400);
         }
 
-        if(!in_array($user->type, $allowed)) {
+        if (!in_array($user->type, $allowed)) {
             throw new AppException("You do not have sufficient permissons to access this area", 403);
         }
 
@@ -60,7 +60,7 @@ final class Auth
 
 
         $_SESSION["user_id"] = $user->id;
-        if($remember) {
+        if ($remember) {
             setcookie("user_id", (string)$user->id, time() + 3600 * 24 * 30, "/"); // remember for 30 days
         }
 
@@ -83,43 +83,44 @@ final class Auth
      */
     public function requireLogin(array $allowed, string $login_path = "/sign-in"): void
     {
-        if(!self::isLoggedIn()) {
+        if (!self::isLoggedIn()) {
             header("Location: $login_path");
             exit;
         }
 
         $user = self::user();
-        if(!in_array($user->type, $allowed)) {
+        if (!in_array($user?->type, $allowed)) {
             throw new AppException("You do not have sufficient permissons to access this area", 403);
         }
     }
 
-    public static function getOwner(): Student|Staff
+    public static function getOwner(): Student|Staff|null
     {
         /** @var User $user */
         $user = self::user();
-        if(!$user) {
+        if (!$user) {
             throw new AppException("No user signed in!", 403);
         }
 
-        if(empty($user->getID())) {
+        if (empty($user->getID())) {
             throw new AppException("Invalid user signed in!", 403);
         }
 
-        return match($user->type) {
+        return match ($user->type) {
             UserType::Student => Student::new()->findById($user->getID()),
-            UserType::Staff => Staff::new()->findById($user->getID())
+            UserType::Staff => Staff::new()->findById($user->getID()),
+            default => null
         };
     }
 
     public static function user(): ?User
     {
         $userId = $_SESSION["user_id"] ?? $_COOKIE["user_id"] ?? null;
-        if(empty($userId)) {
+        if (empty($userId)) {
             return null;
         }
 
-        if(empty($_SESSION["user_id"])) {
+        if (empty($_SESSION["user_id"])) {
             $_SESSION["user_id"] = $userId;
         }
 

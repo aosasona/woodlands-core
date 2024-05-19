@@ -13,20 +13,26 @@ use Woodlands\Core\Models\BaseModel;
 #[Table(name: "modules", primaryKey: "module_id")]
 class Module extends BaseModel
 {
+    /** @psalm-suppress PropertyNotSetInConstructor */
     #[Column(name: "module_id")]
     protected int $id;
 
+    /** @psalm-suppress PropertyNotSetInConstructor */
     #[Column(name: "name")]
     protected string $name;
 
+    /** @psalm-suppress PropertyNotSetInConstructor */
     #[Column(name: "code")]
     protected string $code;
 
+    /** @psalm-suppress PropertyNotSetInConstructor */
     #[Column(name: "description", nullable: true)]
     protected ?string $description = null;
 
+    /** @psalm-suppress PropertyNotSetInConstructor */
     #[Column(
         name: "created_at",
+        nullable: true,
         encoder: [Converter::class, "fromDateTime"],
         decoder: [Converter::class, "toDateTime"]
     )]
