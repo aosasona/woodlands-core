@@ -42,10 +42,11 @@ class Course extends BaseModel
 
     #[Column(
         name: "created_at",
+        nullable: true,
         encoder: [Converter::class, "fromDateTime"],
         decoder: [Converter::class, "toDateTime"]
     )]
-    protected DateTime $createdAt;
+    protected ?DateTime $createdAt;
 
     #[Column(
         name: "last_modified_at",
