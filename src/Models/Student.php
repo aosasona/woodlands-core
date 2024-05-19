@@ -52,12 +52,19 @@ class Student extends BaseModel
     protected int $userId;
 
     #[Column(
+        name: "enrolled_at",
+        encoder: [Converter::class, "fromDateTime"],
+        decoder: [Converter::class, "toDateTime"]
+    )]
+    protected DateTime $enrolledAt;
+
+    #[Column(
         name: "created_at",
         nullable: true,
         encoder: [Converter::class, "fromDateTime"],
         decoder: [Converter::class, "toDateTime"]
     )]
-    protected DateTime $createdAt;
+    protected ?DateTime $createdAt;
 
     #[Column(
         name: "last_modified_at",
@@ -72,7 +79,6 @@ class Student extends BaseModel
 
     #[Relationship(model: User::class, property: "userId", parentColumn: "user_id")]
     protected User $user;
-
 
     public function __construct(protected Connection $conn)
     {

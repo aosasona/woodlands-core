@@ -55,6 +55,7 @@ Table students {
   user_id int [not null, unique]
   department_id int
 
+  enrolled_at date [not null]
   created_at timestamp [default: `now()`, not null]
   last_modified_at timestamp [default: `now()`, not null]
 }

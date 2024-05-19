@@ -219,6 +219,7 @@ CREATE TABLE `students` (
   `nationality` varchar(64) NOT NULL,
   `gender` enum('male','female','others') NOT NULL,
   `user_id` int(11) NOT NULL,
+  `enrolled_at` date NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `last_modified_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
