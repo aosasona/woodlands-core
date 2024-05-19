@@ -108,7 +108,7 @@ Table courses {
   department_id int 
 
   start_date date [not null]
-  end_date date [not null]
+  end_date date [note: "Describes when the course was discontinued or ended"]
 
   created_at timestamp [default: `now()`, not null]
   last_modified_at timestamp [default: `now()`]

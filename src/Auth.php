@@ -81,7 +81,7 @@ final class Auth
      * @param array<int,\Woodlands\Core\Models\Enums\UserType> $allowed
      * @param string $login_path
      */
-    public function requireLogin(array $allowed, string $login_path = "/sign-in"): void
+    public static function requireLogin(array $allowed, string $login_path = "/sign-in"): void
     {
         if (!self::isLoggedIn()) {
             header("Location: $login_path");

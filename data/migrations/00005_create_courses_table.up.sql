@@ -4,7 +4,7 @@ CREATE TABLE `courses` (
   `description` text,
   `department_id` int,
   `start_date` date NOT NULL,
-  `end_date` date NOT NULL,
+  `end_date` date,
   `created_at` timestamp NOT NULL DEFAULT (now()),
   `last_modified_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP
 );

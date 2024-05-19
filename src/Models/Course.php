@@ -34,10 +34,11 @@ class Course extends BaseModel
 
     #[Column(
         name: "end_date",
+        nullable: true,
         encoder: [Converter::class, "fromDateTime"],
         decoder: [Converter::class, "toDateTime"]
     )]
-    protected DateTime $endDate;
+    protected ?DateTime $endDate;
 
     #[Column(
         name: "created_at",

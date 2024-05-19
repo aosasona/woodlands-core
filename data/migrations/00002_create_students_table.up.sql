@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS `students` (
   `nationality` varchar(64) NOT NULL,
   `gender` enum('M', 'F') NOT NULL,
   `user_id` int UNIQUE NOT NULL,
+  `enrolled_at` date NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT (now()),
   `last_modified_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP
 );
