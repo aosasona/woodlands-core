@@ -230,7 +230,8 @@ abstract class BaseModel implements JsonSerializable
             $pagination_clause = "LIMIT $offset, {$pagination["perPage"]}";
         }
 
-        $sql = "SELECT $columns FROM `{$this->tableName}`{$joins} WHERE {$where->getWhereClause()} {$where->getOrderBy()}";
+        $order = empty($where->getOrderBy()) ? "" : "ORDER BY {$where->getOrderBy()}";
+        $sql = "SELECT $columns FROM `{$this->tableName}`{$joins} WHERE {$where->getWhereClause()} {$order}";
 
         if ($count >= 1) {
             $sql .= " LIMIT $count";
