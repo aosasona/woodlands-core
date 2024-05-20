@@ -663,6 +663,16 @@ abstract class BaseModel implements JsonSerializable
         return $this->changedColumns;
     }
 
+    /**
+     * @param array<int,mixed> $data
+     */
+    public static function from(array $data): static
+    {
+        $model = new static(Connection::getInstance());
+        $model->mapColumnsToProperties($data);
+        return $model;
+    }
+
     public function toJSON(bool $includeNullFields = false): string
     {
         $data = [];
@@ -680,7 +690,7 @@ abstract class BaseModel implements JsonSerializable
             }
         }
 
-        foreach (static::getRelationships() as $propertyName => $relation) {
+        foreach (static::getRelationships() as $propertyName => $_) {
             if (!isset($this->$propertyName)) {
                 continue;
             }
