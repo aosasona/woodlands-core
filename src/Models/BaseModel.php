@@ -337,7 +337,7 @@ abstract class BaseModel implements JsonSerializable
         return $this;
     }
 
-    private function update(): static
+    protected function update(): static
     {
         if (empty($this->changedColumns)) {
             return $this;
